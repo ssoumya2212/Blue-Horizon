@@ -10,7 +10,6 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
-import { Route as SignupRouteImport } from './routes/signup'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
@@ -34,11 +33,6 @@ import { Route as AppAdminRouteImport } from './routes/app.admin'
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SignupRoute = SignupRouteImport.update({
-  id: '/signup',
-  path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -145,7 +139,6 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
-  '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
   '/app/admin': typeof AppAdminRoute
   '/app/buses': typeof AppBusesRoute
@@ -168,7 +161,6 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
-  '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
   '/app/admin': typeof AppAdminRoute
   '/app/buses': typeof AppBusesRoute
@@ -192,7 +184,6 @@ export interface FileRoutesById {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
-  '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
   '/app/admin': typeof AppAdminRoute
   '/app/buses': typeof AppBusesRoute
@@ -217,7 +208,6 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/privacy'
-    | '/signup'
     | '/terms'
     | '/app/admin'
     | '/app/buses'
@@ -240,7 +230,6 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/privacy'
-    | '/signup'
     | '/terms'
     | '/app/admin'
     | '/app/buses'
@@ -263,7 +252,6 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/privacy'
-    | '/signup'
     | '/terms'
     | '/app/admin'
     | '/app/buses'
@@ -287,7 +275,6 @@ export interface RootRouteChildren {
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   PrivacyRoute: typeof PrivacyRoute
-  SignupRoute: typeof SignupRoute
   TermsRoute: typeof TermsRoute
 }
 
@@ -298,13 +285,6 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/signup': {
-      id: '/signup'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -483,7 +463,6 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   PrivacyRoute: PrivacyRoute,
-  SignupRoute: SignupRoute,
   TermsRoute: TermsRoute,
 }
 export const routeTree = rootRouteImport

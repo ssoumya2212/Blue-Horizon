@@ -1,1 +1,0 @@
-import{h as s}from"./index-UQC7nCWP.js";let u="";const r=new Set;function a(e){u=e,r.forEach(t=>t(e))}function c(){const[e,t]=s.useState(u);return s.useEffect(()=>(r.add(t),()=>{r.delete(t)}),[]),e}export{a as s,c as u};

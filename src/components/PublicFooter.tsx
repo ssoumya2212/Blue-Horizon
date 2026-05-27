@@ -24,11 +24,6 @@ export function PublicFooter() {
                 Login
               </Link>
             </li>
-            <li>
-              <Link to="/signup" className="hover:text-foreground">
-                Sign up
-              </Link>
-            </li>
           </ul>
         </div>
         <div>

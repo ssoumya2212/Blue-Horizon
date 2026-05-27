@@ -119,14 +119,6 @@ function LandingPage() {
               <Button
                 asChild
                 size="lg"
-                variant="outline"
-                className="border-white/30 bg-white/10 text-white hover:bg-white/20"
-              >
-                <Link to="/signup">Create account</Link>
-              </Button>
-              <Button
-                asChild
-                size="lg"
                 className="bg-emerald-500 text-white hover:bg-emerald-600"
               >
                 <a href="/Blue-Horizon-App.apk" download>
@@ -265,13 +257,6 @@ function LandingPage() {
             daily peace of mind.
           </p>
           <div className="mt-6 flex justify-center gap-3">
-            <Button
-              asChild
-              size="lg"
-              className="bg-white text-primary hover:bg-white/90"
-            >
-              <Link to="/signup">Get started</Link>
-            </Button>
             <Button
               asChild
               size="lg"

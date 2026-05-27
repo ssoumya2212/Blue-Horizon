@@ -37,9 +37,6 @@ export function PublicNav() {
           <Button asChild variant="ghost" className="hidden sm:inline-flex">
             <Link to="/login">Login</Link>
           </Button>
-          <Button asChild className="hidden sm:inline-flex">
-            <Link to="/signup">Sign up</Link>
-          </Button>
           <Button
             variant="ghost"
             size="icon"
@@ -69,13 +66,6 @@ export function PublicNav() {
               className="rounded-md px-2 py-2 text-sm"
             >
               Login
-            </Link>
-            <Link
-              to="/signup"
-              onClick={() => setOpen(false)}
-              className="rounded-md px-2 py-2 text-sm"
-            >
-              Sign up
             </Link>
           </div>
         </div>
