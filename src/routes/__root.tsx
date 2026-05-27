@@ -88,8 +88,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { property: "og:title", content: "Blue Horizon" },
         { property: "og:description", content: "School Bus Tracking Platform" },
         { property: "og:type", content: "website" },
-        { name: "twitter:card", content: "summary" },
+        { property: "og:url", content: "https://blue-horizon.trackmybus.workers.dev" },
+        { property: "og:image", content: "https://blue-horizon.trackmybus.workers.dev/icon-512.png" },
+        { name: "twitter:card", content: "summary_large_image" },
         { name: "twitter:site", content: "@BlueHorizon" },
+        { name: "twitter:image", content: "https://blue-horizon.trackmybus.workers.dev/icon-512.png" },
       ],
       links: [
         {
