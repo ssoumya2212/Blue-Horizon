@@ -138,7 +138,7 @@ function RootComponent() {
   const [showSplash, setShowSplash] = useState(true);
 
   const [permissionsGranted, setPermissionsGranted] = useState(
-    () => localStorage.getItem("permissions_granted") === "true"
+    () => typeof window !== "undefined" && localStorage.getItem("permissions_granted") === "true"
   );
 
   const requestPermissions = async () => {
