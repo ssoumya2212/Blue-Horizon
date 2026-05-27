@@ -298,7 +298,16 @@ function LoginPage() {
 
       <div className="flex flex-1 items-center justify-center px-4 py-8">
         <Card className="glass-card w-full max-w-md overflow-hidden p-0 border-0 rounded-2xl">
-          <Tabs value={role} onValueChange={(v) => setRole(v as Role)}>
+          <Tabs
+            value={role}
+            onValueChange={(v) => {
+              const newRole = v as Role;
+              setRole(newRole);
+              if (newRole === "admin") {
+                switchMode("email_password");
+              }
+            }}
+          >
             <TabsList className="grid h-14 w-full grid-cols-3 rounded-none bg-black/10 backdrop-blur-md p-1 gap-1">
               {(["parent", "driver", "admin"] as Role[]).map((r) => (
                 <TabsTrigger
@@ -596,19 +605,21 @@ function LoginPage() {
                 </form>
               )}
 
-              <div className="relative my-4">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
+              {role !== "admin" && (
+                <div className="relative my-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                      Or continue with
+                    </span>
+                  </div>
                 </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">
-                    Or continue with
-                  </span>
-                </div>
-              </div>
+              )}
 
               <div className="grid gap-3">
-                {authMode !== "phone" && (
+                {role !== "admin" && authMode !== "phone" && (
                   <Button
                     type="button"
                     variant="outline"
@@ -620,7 +631,7 @@ function LoginPage() {
                     Continue with Phone (OTP)
                   </Button>
                 )}
-                {authMode !== "email_otp" && (
+                {role !== "admin" && authMode !== "email_otp" && (
                   <Button
                     type="button"
                     variant="outline"
@@ -632,7 +643,7 @@ function LoginPage() {
                     Continue with Email (OTP)
                   </Button>
                 )}
-                {authMode !== "email_password" && (
+                {role !== "admin" && authMode !== "email_password" && (
                   <Button
                     type="button"
                     variant="outline"
