@@ -3,7 +3,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { MapPin, AlertTriangle, Phone } from "lucide-react";
 import { FleetMap } from "@/components/FleetMap";
-import { Geolocation } from "@capacitor/geolocation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +55,7 @@ function DriverDashboard() {
 
     const startTracking = async () => {
       try {
+        const { Geolocation } = await import("@capacitor/geolocation");
         await Geolocation.requestPermissions();
         watchId = await Geolocation.watchPosition(
           { enableHighAccuracy: true },
@@ -89,7 +89,9 @@ function DriverDashboard() {
 
     return () => {
       if (watchId) {
-        Geolocation.clearWatch({ id: watchId });
+        import("@capacitor/geolocation").then(({ Geolocation }) => {
+          Geolocation.clearWatch({ id: watchId as string }).catch(() => {});
+        }).catch(() => {});
       }
     };
   }, []);

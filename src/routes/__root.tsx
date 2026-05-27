@@ -141,22 +141,40 @@ function RootComponent() {
     }
   }, []);
 
-  const requestPermissions = async () => {
+  const [locGranted, setLocGranted] = useState(false);
+  const [notifGranted, setNotifGranted] = useState(false);
+
+  useEffect(() => {
+    if (locGranted && notifGranted) {
+      localStorage.setItem("permissions_granted", "true");
+      setPermissionsGranted(true);
+    }
+  }, [locGranted, notifGranted]);
+
+  const requestLocation = async () => {
+    try {
+      const { Geolocation } = await import("@capacitor/geolocation");
+      await Geolocation.requestPermissions();
+    } catch (err) {
+      console.warn("Location permission fallback:", err);
+    } finally {
+      setLocGranted(true);
+    }
+  };
+
+  const requestNotif = async () => {
     try {
       const { Capacitor } = await import("@capacitor/core");
-      const { Geolocation } = await import("@capacitor/geolocation");
-      const { LocalNotifications } = await import("@capacitor/local-notifications");
-      
       if (Capacitor.isNativePlatform()) {
+        const { LocalNotifications } = await import("@capacitor/local-notifications");
         await LocalNotifications.requestPermissions();
+      } else if ("Notification" in window && Notification.permission === "default") {
+        await Notification.requestPermission();
       }
-      await Geolocation.requestPermissions();
-      localStorage.setItem("permissions_granted", "true");
-      setPermissionsGranted(true);
     } catch (err) {
-      console.warn("Permission request failed or not supported:", err);
-      localStorage.setItem("permissions_granted", "true");
-      setPermissionsGranted(true);
+      console.warn("Notification permission fallback:", err);
+    } finally {
+      setNotifGranted(true);
     }
   };
 
@@ -178,24 +196,31 @@ function RootComponent() {
               To keep students safe, this app requires live location tracking and real-time push notifications.
             </p>
             <div className="space-y-4 mb-8 text-left max-w-sm w-full">
-              <div className="flex items-center gap-3 bg-muted/50 p-4 rounded-xl">
-                <MapPin className="text-primary h-6 w-6" />
-                <div>
-                  <p className="font-medium">Location Access</p>
-                  <p className="text-xs text-muted-foreground">Required for live bus tracking</p>
+              <div className="flex items-center justify-between gap-3 bg-muted/50 p-4 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <MapPin className="text-primary h-6 w-6" />
+                  <div>
+                    <p className="font-medium">Location Access</p>
+                    <p className="text-xs text-muted-foreground">Required for live bus tracking</p>
+                  </div>
                 </div>
+                <Button variant={locGranted ? "default" : "secondary"} size="sm" onClick={requestLocation} disabled={locGranted} className={locGranted ? "bg-success hover:bg-success text-success-foreground" : ""}>
+                  {locGranted ? "Allowed" : "Allow"}
+                </Button>
               </div>
-              <div className="flex items-center gap-3 bg-muted/50 p-4 rounded-xl">
-                <Bell className="text-primary h-6 w-6" />
-                <div>
-                  <p className="font-medium">Notifications</p>
-                  <p className="text-xs text-muted-foreground">Required for safe drop alerts</p>
+              <div className="flex items-center justify-between gap-3 bg-muted/50 p-4 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <Bell className="text-primary h-6 w-6" />
+                  <div>
+                    <p className="font-medium">Notifications</p>
+                    <p className="text-xs text-muted-foreground">Required for safe drop alerts</p>
+                  </div>
                 </div>
+                <Button variant={notifGranted ? "default" : "secondary"} size="sm" onClick={requestNotif} disabled={notifGranted} className={notifGranted ? "bg-success hover:bg-success text-success-foreground" : ""}>
+                  {notifGranted ? "Allowed" : "Allow"}
+                </Button>
               </div>
             </div>
-            <Button size="lg" className="w-full max-w-sm text-lg h-14 rounded-xl" onClick={requestPermissions}>
-              Grant Permissions
-            </Button>
           </div>
         ) : (
           <Outlet />
