@@ -170,6 +170,15 @@ function LoginPage() {
     try {
       let phone = getPhoneValues("phone");
       phone = phone.startsWith("+") ? phone : `+${phone}`;
+      
+      // Bypass for testing Twilio without receiving SMS
+      if (otpToken === "123456") {
+        toast.success("Login Successful (Bypass)");
+        setLocalSession(phone, role);
+        navigate({ to: homeFor(role) });
+        return;
+      }
+
       const res = await verifyOtp(phone, otpToken);
       if (res && res.error) {
         toast.error(res.error);
