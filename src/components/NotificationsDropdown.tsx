@@ -43,7 +43,7 @@ export function NotificationsDropdown({ role }: { role: string }) {
     });
 
     // Subscribe to realtime updates
-    const subscription = subscribeToNotifications(role, (payload) => {
+    const subscription = subscribeToNotifications(role, (payload: any) => {
       if (payload.eventType === "INSERT") {
         setNotifications((prev) => [payload.new, ...prev]);
 

@@ -42,18 +42,9 @@ export const Route = createFileRoute("/app/driver")({
   component: DriverDashboard,
 });
 
-type Student = { id: number; name: string; stop: string; present: boolean };
+import type { Student, StudentStatus } from "@/lib/db";
 
-const initial: Student[] = [
-  { id: 1, name: "Aarav S", stop: "Stop 5", present: true },
-  { id: 2, name: "Advik N", stop: "Stop 3", present: true },
-  { id: 3, name: "Anaya R", stop: "Stop 7", present: true },
-  { id: 4, name: "Anvi K", stop: "Stop 8", present: true },
-  { id: 5, name: "Arjun M", stop: "Stop 5", present: true },
-  { id: 6, name: "Aarohi D", stop: "Stop 6", present: true },
-  { id: 7, name: "Diya S", stop: "Stop 7", present: true },
-  { id: 8, name: "Ishika R", stop: "Stop 8", present: true },
-];
+// Remove static initial array
 
 function DriverDashboard() {
   const [isGpsActive, setIsGpsActive] = useState(false);
@@ -102,28 +93,73 @@ function DriverDashboard() {
       }
     };
   }, []);
-  const [students, setStudents] = useState(initial);
+  const [students, setStudents] = useState<Student[]>([]);
   const [q, setQ] = useState("");
   const [reportText, setReportText] = useState("");
   const reports = useReports();
-  const present = students.filter((s) => s.present).length;
+  
+  useEffect(() => {
+    const fetchStudents = async () => {
+      const { data } = await supabase
+        .from("students")
+        .select("*")
+        .eq("bus_id", "007")
+        .order("name");
+      if (data) setStudents(data);
+    };
+    fetchStudents();
+
+    const channel = supabase
+      .channel("driver_students")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "students", filter: "bus_id=eq.007" },
+        (payload) => {
+          if (payload.eventType === "UPDATE") {
+            setStudents((prev) =>
+              prev.map((s) => (s.id === payload.new.id ? (payload.new as Student) : s))
+            );
+          } else if (payload.eventType === "INSERT") {
+            setStudents((prev) => [...prev, payload.new as Student]);
+          }
+        }
+      )
+      .subscribe();
+      
+    return () => { channel.unsubscribe(); };
+  }, []);
+
+  const pendingCount = students.filter((s) => s.status !== "dropped").length;
   const filtered = students.filter((s) =>
-    s.name.toLowerCase().includes(q.toLowerCase()),
+    s.name.toLowerCase().includes(q.toLowerCase())
   );
-  const toggle = (id: number) => {
-    setStudents((arr) => {
-      const student = arr.find((s) => s.id === id);
-      if (student) {
-        const isNowPresent = !student.present;
-        addNotification(
-          "Attendance Update",
-          `${student.name} was marked ${isNowPresent ? "Present" : "Absent"}.`,
-          "attendance",
-          "parent",
-        );
-      }
-      return arr.map((s) => (s.id === id ? { ...s, present: !s.present } : s));
+
+  const markDropped = async (student: Student) => {
+    if (student.status === "dropped") return;
+    
+    // 1. Update Student status
+    await supabase
+      .from("students")
+      .update({ status: "dropped", last_updated: new Date().toISOString() })
+      .eq("id", student.id);
+
+    // 2. Insert Drop Log
+    await supabase.from("drop_logs").insert({
+      student_id: student.id,
+      bus_id: "007",
+      status: "dropped",
+      location_name: student.drop_address
     });
+
+    // 3. Send Notification to Parent
+    addNotification(
+      "Safe Drop-off 🚸",
+      `Your child ${student.name} has been safely dropped at ${student.drop_address}.`,
+      "attendance",
+      "parent"
+    );
+    
+    toast.success(`${student.name} marked as dropped!`);
   };
 
   const submitReport = async (e: React.FormEvent) => {
@@ -287,8 +323,8 @@ function DriverDashboard() {
       <div className="grid gap-4 sm:grid-cols-3">
         {[
           { label: "BUS NO", value: "007" },
-          { label: "STOPS", value: "12" },
-          { label: "STUDENTS", value: `${present}/${students.length}` },
+          { label: "ROUTE", value: "OMR Express" },
+          { label: "ONBOARD", value: pendingCount },
         ].map((s, i) => (
           <Card
             key={s.label}
@@ -319,7 +355,7 @@ function DriverDashboard() {
             <TableRow>
               <TableHead className="w-12">#</TableHead>
               <TableHead>Name</TableHead>
-              <TableHead>Stop</TableHead>
+              <TableHead>Drop Address</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Action</TableHead>
             </TableRow>
@@ -330,19 +366,23 @@ function DriverDashboard() {
                 <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                 <TableCell className="font-medium">{s.name}</TableCell>
                 <TableCell className="text-muted-foreground">
-                  {s.stop}
+                  {s.drop_address}
                 </TableCell>
                 <TableCell>
-                  {s.present ? (
+                  {s.status === "dropped" ? (
                     <Badge className="bg-success text-success-foreground">
-                      Present
+                      Dropped
+                    </Badge>
+                  ) : s.status === "picked" ? (
+                    <Badge className="bg-primary text-primary-foreground">
+                      Onboard
                     </Badge>
                   ) : (
                     <Badge
                       variant="outline"
-                      className="border-destructive/30 text-destructive"
+                      className="border-warning/50 text-warning"
                     >
-                      Absent
+                      Pending
                     </Badge>
                   )}
                 </TableCell>
@@ -360,10 +400,11 @@ function DriverDashboard() {
                     </Button>
                     <Button
                       size="sm"
-                      variant={s.present ? "outline" : "default"}
-                      onClick={() => toggle(s.id)}
+                      variant={s.status === "dropped" ? "outline" : "default"}
+                      disabled={s.status === "dropped"}
+                      onClick={() => markDropped(s)}
                     >
-                      {s.present ? "Mark absent" : "Mark present"}
+                      {s.status === "dropped" ? "Dropped" : "Mark Drop"}
                     </Button>
                   </div>
                 </TableCell>

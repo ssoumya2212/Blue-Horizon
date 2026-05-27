@@ -30,7 +30,9 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="flex flex-col items-center justify-center gap-6"
           >
-            <Logo variant="light" className="h-24 w-auto" />
+            <div className="h-24 w-auto flex items-center justify-center">
+              <Logo variant="light" />
+            </div>
             <motion.div
               initial={{ width: 0, opacity: 0 }}
               animate={{ width: "100%", opacity: 1 }}

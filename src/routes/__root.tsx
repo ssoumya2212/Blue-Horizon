@@ -130,24 +130,32 @@ import { Capacitor } from "@capacitor/core";
 import { Geolocation } from "@capacitor/geolocation";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { MapPin, Bell, ShieldCheck } from "lucide-react";
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const [showSplash, setShowSplash] = useState(true);
 
-  useEffect(() => {
-    async function requestPermissions() {
-      try {
-        if (Capacitor.isNativePlatform()) {
-          await LocalNotifications.requestPermissions();
-        }
-        await Geolocation.requestPermissions();
-      } catch (err) {
-        console.warn("Permission request failed or not supported:", err);
+  const [permissionsGranted, setPermissionsGranted] = useState(
+    () => localStorage.getItem("permissions_granted") === "true"
+  );
+
+  const requestPermissions = async () => {
+    try {
+      if (Capacitor.isNativePlatform()) {
+        await LocalNotifications.requestPermissions();
       }
+      await Geolocation.requestPermissions();
+      localStorage.setItem("permissions_granted", "true");
+      setPermissionsGranted(true);
+    } catch (err) {
+      console.warn("Permission request failed or not supported:", err);
+      // Fallback for web dev environments
+      localStorage.setItem("permissions_granted", "true");
+      setPermissionsGranted(true);
     }
-    requestPermissions();
-  }, []);
+  };
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -155,9 +163,40 @@ function RootComponent() {
         <SplashScreen onComplete={() => setShowSplash(false)} />
       ) : null}
       <div
-        className={`transition-opacity duration-700 ${showSplash ? "opacity-0" : "opacity-100"}`}
+        className={`transition-opacity duration-700 ${showSplash ? "opacity-0" : "opacity-100"} min-h-screen`}
       >
-        <Outlet />
+        {!permissionsGranted ? (
+          <div className="flex flex-col items-center justify-center min-h-screen bg-background p-6 text-center animate-in fade-in zoom-in duration-500">
+            <div className="bg-primary/10 p-6 rounded-full mb-6">
+              <ShieldCheck className="h-16 w-16 text-primary" />
+            </div>
+            <h1 className="text-3xl font-bold mb-4">Welcome to Blue Horizon</h1>
+            <p className="text-muted-foreground max-w-md mb-8">
+              To keep students safe, this app requires live location tracking and real-time push notifications.
+            </p>
+            <div className="space-y-4 mb-8 text-left max-w-sm w-full">
+              <div className="flex items-center gap-3 bg-muted/50 p-4 rounded-xl">
+                <MapPin className="text-primary h-6 w-6" />
+                <div>
+                  <p className="font-medium">Location Access</p>
+                  <p className="text-xs text-muted-foreground">Required for live bus tracking</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 bg-muted/50 p-4 rounded-xl">
+                <Bell className="text-primary h-6 w-6" />
+                <div>
+                  <p className="font-medium">Notifications</p>
+                  <p className="text-xs text-muted-foreground">Required for safe drop alerts</p>
+                </div>
+              </div>
+            </div>
+            <Button size="lg" className="w-full max-w-sm text-lg h-14 rounded-xl" onClick={requestPermissions}>
+              Grant Permissions
+            </Button>
+          </div>
+        ) : (
+          <Outlet />
+        )}
       </div>
     </QueryClientProvider>
   );

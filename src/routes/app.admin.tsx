@@ -117,6 +117,9 @@ import {
 } from "@/lib/drivers";
 import { FleetMap } from "@/components/FleetMap";
 import { useFleetPositions } from "@/lib/tracking";
+import { supabase } from "@/lib/supabase";
+import type { Bus as DbBus, Student as DbStudent } from "@/lib/db";
+import { useEffect } from "react";
 
 type DialogKind = "bus" | "driver" | "parent" | "route" | "announcement" | null;
 
@@ -124,6 +127,34 @@ function AdminDashboard() {
   const drivers = useDrivers();
   const fleet = useFleetPositions();
   const [openDialog, setOpenDialog] = useState<DialogKind>(null);
+  
+  const [buses, setBuses] = useState<DbBus[]>([]);
+  const [students, setStudents] = useState<DbStudent[]>([]);
+
+  useEffect(() => {
+    const loadDb = async () => {
+      const { data: b } = await supabase.from("buses").select("*").order("id");
+      if (b) setBuses(b);
+      const { data: s } = await supabase.from("students").select("*");
+      if (s) setStudents(s);
+    };
+    loadDb();
+
+    const channel1 = supabase
+      .channel("admin_buses")
+      .on("postgres_changes", { event: "*", schema: "public", table: "buses" }, loadDb)
+      .subscribe();
+      
+    const channel2 = supabase
+      .channel("admin_students")
+      .on("postgres_changes", { event: "*", schema: "public", table: "students" }, loadDb)
+      .subscribe();
+
+    return () => {
+      channel1.unsubscribe();
+      channel2.unsubscribe();
+    };
+  }, []);
 
   const updateDriver = (name: string, status: DriverStatus) => {
     updateDriverStatus(name, status);
@@ -203,6 +234,60 @@ function AdminDashboard() {
         <div className="w-full overflow-hidden rounded-xl h-[400px]">
           <FleetMap buses={fleet} showAccessibleList={false} />
         </div>
+      </Card>
+
+      <Card className="p-5 overflow-x-auto">
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold">Live Bus Monitoring</h2>
+          <p className="text-xs text-muted-foreground">Real-time status synced from database</p>
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Bus</TableHead>
+              <TableHead>Driver</TableHead>
+              <TableHead>Route</TableHead>
+              <TableHead>Speed</TableHead>
+              <TableHead>Students Onboard</TableHead>
+              <TableHead>Next Stop</TableHead>
+              <TableHead className="text-right">Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {buses.map((b) => {
+              const onboard = students.filter(s => s.bus_id === b.id && s.status !== "dropped").length;
+              const total = students.filter(s => s.bus_id === b.id).length;
+              return (
+                <TableRow key={b.id}>
+                  <TableCell className="font-bold">#{b.id}</TableCell>
+                  <TableCell>{b.driver_name}</TableCell>
+                  <TableCell className="text-muted-foreground">{b.route_name}</TableCell>
+                  <TableCell>
+                    <span className="font-mono">{b.speed_kmh}</span> km/h
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={onboard > 0 ? "default" : "secondary"}>{onboard} / {total}</Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{b.next_stop}</TableCell>
+                  <TableCell className="text-right">
+                    <Badge
+                      variant="outline"
+                      className={
+                        b.status === "Running"
+                          ? "border-success/30 text-success"
+                          : b.status === "Delayed"
+                            ? "border-warning/50 text-warning"
+                            : "border-border"
+                      }
+                    >
+                      {b.status}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -497,7 +582,7 @@ function AddEntityDialog({
     },
   } as const;
 
-  const current = kind ? config[kind] : null;
+  const current = kind && kind !== "announcement" ? config[kind] : null;
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -533,7 +618,7 @@ function AddEntityDialog({
               <DialogDescription>{current.description}</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              {current.fields.map((f) => (
+              {current.fields.map((f: any) => (
                 <div key={f.name} className="grid gap-2">
                   <Label htmlFor={f.name}>{f.label}</Label>
                   <Input

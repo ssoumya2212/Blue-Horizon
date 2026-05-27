@@ -19,6 +19,8 @@ import { useFleetPositions } from "@/lib/tracking";
 import { supabase } from "@/lib/supabase";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
+import { CheckCircle } from "lucide-react";
+import type { Student } from "@/lib/db";
 import {
   fetchNotifications,
   subscribeToNotifications,
@@ -60,6 +62,32 @@ function ParentDashboard() {
     { lat: number; lng: number } | undefined
   >();
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  const [student, setStudent] = useState<Student | null>(null);
+
+  useEffect(() => {
+    const fetchStudent = async () => {
+      const { data } = await supabase
+        .from("students")
+        .select("*")
+        .eq("name", "Aarav S") // Using Aarav as the mock logged-in parent's child
+        .single();
+      if (data) setStudent(data);
+    };
+    fetchStudent();
+
+    const studChannel = supabase
+      .channel("parent_student")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "students", filter: "name=eq.Aarav S" },
+        (payload) => {
+          setStudent(payload.new as Student);
+        }
+      )
+      .subscribe();
+
+    return () => { studChannel.unsubscribe(); };
+  }, []);
 
   useEffect(() => {
     const fetchInitial = async () => {
@@ -115,18 +143,24 @@ function ParentDashboard() {
               <GraduationCap className="h-7 w-7" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">Aarav S</h1>
-              <p className="text-white/80">Grade 5 • Bus 007</p>
+              <h1 className="text-2xl font-bold">{student?.name || "Aarav S"}</h1>
+              <p className="text-white/80">Bus {student?.bus_id || "007"}</p>
               <p className="mt-1 flex items-center gap-1 text-sm text-white/80">
-                <MapPin className="h-3.5 w-3.5" /> Gandhi Nagar
+                <MapPin className="h-3.5 w-3.5" /> {student?.drop_address || "Loading..."}
               </p>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
             <Badge className="bg-success text-success-foreground">On Bus</Badge>
-            <Badge className="bg-white text-primary hover:bg-white">
-              Present
-            </Badge>
+            {student?.status === "dropped" ? (
+              <Badge className="bg-success text-success-foreground hover:bg-success border-2 border-white">
+                Dropped Safely
+              </Badge>
+            ) : (
+              <Badge className="bg-white text-primary hover:bg-white">
+                Pending Drop
+              </Badge>
+            )}
             <Badge
               className="bg-white/15 text-white border-white/20"
               variant="outline"
@@ -136,6 +170,20 @@ function ParentDashboard() {
           </div>
         </div>
       </Card>
+
+      {student?.status === "dropped" && (
+        <div className="rounded-2xl bg-success/15 border border-success/30 p-6 flex flex-col sm:flex-row items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="flex-shrink-0 h-16 w-16 bg-success text-success-foreground rounded-full flex items-center justify-center shadow-lg">
+            <CheckCircle className="h-8 w-8" />
+          </div>
+          <div className="text-center sm:text-left">
+            <h2 className="text-xl font-bold text-success">Safely Dropped!</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              {student.name} has been dropped off at {student.drop_address}.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="p-5 lg:col-span-2">
@@ -249,7 +297,7 @@ function MessagesBoard() {
     };
     load();
 
-    const channel = subscribeToNotifications("parent", (payload) => {
+    const channel = subscribeToNotifications("parent", (payload: any) => {
       const newRecord = payload.new as AppNotification;
       setMessages((prev) => [newRecord, ...prev]);
     });
