@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -216,18 +216,22 @@ function ParentDashboard() {
         >
           <Phone className="h-5 w-5" /> Call School
         </Button>
-        <Button
-          variant="outline"
-          className="h-14 justify-start gap-3 text-foreground"
-        >
-          <AlertCircle className="h-5 w-5 text-muted-foreground" /> Report issue
-        </Button>
-        <Button
-          variant="outline"
-          className="h-14 justify-start gap-3 text-foreground"
-        >
-          <SettingsIcon className="h-5 w-5 text-muted-foreground" /> Settings
-        </Button>
+        <Link to="/app/reports">
+          <Button
+            variant="outline"
+            className="h-14 w-full justify-start gap-3 text-foreground"
+          >
+            <AlertCircle className="h-5 w-5 text-muted-foreground" /> Report issue
+          </Button>
+        </Link>
+        <Link to="/app/settings">
+          <Button
+            variant="outline"
+            className="h-14 w-full justify-start gap-3 text-foreground"
+          >
+            <SettingsIcon className="h-5 w-5 text-muted-foreground" /> Settings
+          </Button>
+        </Link>
       </div>
     </div>
   );
