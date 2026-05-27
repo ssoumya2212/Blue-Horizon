@@ -5,8 +5,7 @@ const config: CapacitorConfig = {
   appName: 'Blue Horizon',
   webDir: 'dist/client',
   server: {
-    // Replace this with your actual production URL after you deploy to Vercel/Cloudflare
-    url: 'https://bluehorizon-production.vercel.app',
+    url: 'https://blue-horizon.trackmybus.workers.dev',
     cleartext: true
   }
 };
