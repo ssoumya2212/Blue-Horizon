@@ -126,9 +126,28 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+import { Capacitor } from "@capacitor/core";
+import { Geolocation } from "@capacitor/geolocation";
+import { LocalNotifications } from "@capacitor/local-notifications";
+import { useEffect } from "react";
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    async function requestPermissions() {
+      try {
+        if (Capacitor.isNativePlatform()) {
+          await LocalNotifications.requestPermissions();
+        }
+        await Geolocation.requestPermissions();
+      } catch (err) {
+        console.warn("Permission request failed or not supported:", err);
+      }
+    }
+    requestPermissions();
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { MapPin, AlertTriangle, Phone } from "lucide-react";
+import { FleetMap } from "@/components/FleetMap";
 import { Geolocation } from "@capacitor/geolocation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -275,6 +276,13 @@ function DriverDashboard() {
           </div>
         </div>
       </div>
+
+      <Card className="p-5">
+        <h2 className="text-lg font-semibold mb-3">Live Navigation</h2>
+        <div className="w-full overflow-hidden rounded-xl h-[300px]">
+          <FleetMap buses={[]} />
+        </div>
+      </Card>
 
       <div className="grid gap-4 sm:grid-cols-3">
         {[

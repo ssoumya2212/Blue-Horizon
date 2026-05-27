@@ -115,11 +115,14 @@ import {
   updateDriverStatus,
   type DriverStatus,
 } from "@/lib/drivers";
+import { FleetMap } from "@/components/FleetMap";
+import { useFleetPositions } from "@/lib/tracking";
 
 type DialogKind = "bus" | "driver" | "parent" | "route" | "announcement" | null;
 
 function AdminDashboard() {
   const drivers = useDrivers();
+  const fleet = useFleetPositions();
   const [openDialog, setOpenDialog] = useState<DialogKind>(null);
 
   const updateDriver = (name: string, status: DriverStatus) => {
@@ -187,6 +190,20 @@ function AdminDashboard() {
           </Card>
         ))}
       </div>
+
+      <Card className="p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">Live Fleet Tracking</h2>
+            <p className="text-xs text-muted-foreground">
+              Monitor all active buses in real-time.
+            </p>
+          </div>
+        </div>
+        <div className="w-full overflow-hidden rounded-xl h-[400px]">
+          <FleetMap buses={fleet} showAccessibleList={false} />
+        </div>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="p-5 lg:col-span-2">

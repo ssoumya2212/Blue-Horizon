@@ -14,7 +14,7 @@ import {
   MessageSquare,
   Send,
 } from "lucide-react";
-import Map from "@/components/Map";
+import { FleetMap } from "@/components/FleetMap";
 import { useFleetPositions } from "@/lib/tracking";
 import { supabase } from "@/lib/supabase";
 import { formatDistanceToNow } from "date-fns";
@@ -188,7 +188,7 @@ function ParentDashboard() {
               : "waiting for location..."}
           </p>
           <div className="mt-3 w-full overflow-hidden rounded-xl">
-            <Map busLocation={busLocation} />
+            <FleetMap buses={myBus ? [myBus] : []} highlightId="007" />
           </div>
         </Card>
       </div>
