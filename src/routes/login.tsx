@@ -134,7 +134,7 @@ function LoginPage() {
     try {
       const formattedPhone = data.phone.startsWith("+")
         ? data.phone
-        : `+${data.phone}`;
+        : `+91${data.phone}`;
       const res = await sendOtp(formattedPhone);
       if (res && res.error) {
         toast.error(res.error);
@@ -169,7 +169,7 @@ function LoginPage() {
     setIsLoading(true);
     try {
       let phone = getPhoneValues("phone");
-      phone = phone.startsWith("+") ? phone : `+${phone}`;
+      phone = phone.startsWith("+") ? phone : `+91${phone}`;
       
       // Bypass for testing Twilio without receiving SMS
       if (otpToken === "123456") {
@@ -198,7 +198,7 @@ function LoginPage() {
   const handleResendOtp = async () => {
     let phone = getPhoneValues("phone");
     if (!phone) return;
-    phone = phone.startsWith("+") ? phone : `+${phone}`;
+    phone = phone.startsWith("+") ? phone : `+91${phone}`;
     setIsLoading(true);
     try {
       const res = await sendOtp(phone);
@@ -351,7 +351,7 @@ function LoginPage() {
                         <Phone className="h-5 w-5 text-muted-foreground" />
                         <Input
                           {...registerPhone("phone")}
-                          placeholder="Phone number (e.g. +1234567890)"
+                          placeholder="Phone number (e.g. 9876543210)"
                           className="border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
                           disabled={isLoading}
                         />
