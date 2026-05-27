@@ -187,8 +187,8 @@ function ParentDashboard() {
               ? `last updated ${formatDistanceToNow(new Date(lastUpdated), { addSuffix: true })}`
               : "waiting for location..."}
           </p>
-          <div className="mt-3 w-full overflow-hidden rounded-xl">
-            <FleetMap buses={myBus ? [myBus] : []} highlightId="007" />
+          <div className="mt-3 w-full overflow-hidden rounded-xl h-[300px]">
+            <FleetMap buses={myBus ? [myBus] : []} highlightId="007" showUserLocation={false} />
           </div>
         </Card>
       </div>
