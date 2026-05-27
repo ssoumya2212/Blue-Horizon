@@ -11,7 +11,7 @@ import {
 import appCss from "../styles.css?url";
 import { getPassengers } from "@/services/passengers";
 import { SplashScreen } from "@/components/SplashScreen";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 getPassengers().then((data) => {
   console.log("SUPABASE DATA:", data);
@@ -126,10 +126,6 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-import { Capacitor } from "@capacitor/core";
-import { Geolocation } from "@capacitor/geolocation";
-import { LocalNotifications } from "@capacitor/local-notifications";
-import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { MapPin, Bell, ShieldCheck } from "lucide-react";
 
@@ -137,12 +133,20 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const [showSplash, setShowSplash] = useState(true);
 
-  const [permissionsGranted, setPermissionsGranted] = useState(
-    () => typeof window !== "undefined" && localStorage.getItem("permissions_granted") === "true"
-  );
+  const [permissionsGranted, setPermissionsGranted] = useState(true);
+
+  useEffect(() => {
+    if (localStorage.getItem("permissions_granted") !== "true") {
+      setPermissionsGranted(false);
+    }
+  }, []);
 
   const requestPermissions = async () => {
     try {
+      const { Capacitor } = await import("@capacitor/core");
+      const { Geolocation } = await import("@capacitor/geolocation");
+      const { LocalNotifications } = await import("@capacitor/local-notifications");
+      
       if (Capacitor.isNativePlatform()) {
         await LocalNotifications.requestPermissions();
       }
@@ -151,7 +155,6 @@ function RootComponent() {
       setPermissionsGranted(true);
     } catch (err) {
       console.warn("Permission request failed or not supported:", err);
-      // Fallback for web dev environments
       localStorage.setItem("permissions_granted", "true");
       setPermissionsGranted(true);
     }
