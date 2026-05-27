@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { GoogleMap, useJsApiLoader, OverlayView } from "@react-google-maps/api";
 import type { BusPosition } from "@/lib/tracking";
 
 type Props = {
@@ -11,55 +10,10 @@ type Props = {
   showAccessibleList?: boolean;
 };
 
-function userIcon() {
-  return L.divIcon({
-    className: "",
-    html: `
-      <div style="position:relative;transform:translate(-50%,-50%);">
-        <span style="position:absolute;inset:-8px;border-radius:9999px;background:oklch(0.62 0.18 145 / 0.3);animation:bh-ping 1.6s cubic-bezier(0,0,0.2,1) infinite;"></span>
-        <div style="position:relative;width:18px;height:18px;border-radius:9999px;background:oklch(0.55 0.2 145);border:3px solid white;box-shadow:0 4px 12px rgba(0,0,0,0.3);"></div>
-      </div>
-    `,
-    iconSize: [18, 18],
-    iconAnchor: [9, 9],
-  });
-}
-
-function busIcon(id: string, highlighted = false) {
-  return L.divIcon({
-    className: "",
-    html: `
-      <div style="position: relative; transform: translate(-50%, -50%);">
-        <span style="
-          position:absolute; inset:-6px;
-          border-radius: 9999px;
-          background: ${highlighted ? "oklch(0.65 0.18 25 / 0.35)" : "oklch(0.62 0.13 235 / 0.35)"};
-          animation: bh-ping 1.6s cubic-bezier(0,0,0.2,1) infinite;
-        "></span>
-        <div style="
-          position: relative;
-          display:flex; align-items:center; justify-content:center;
-          width:36px; height:36px;
-          border-radius: 9999px;
-          background: ${highlighted ? "oklch(0.55 0.2 25)" : "oklch(0.45 0.15 250)"};
-          color: white;
-          font-weight: 700; font-size: 12px;
-          box-shadow: 0 6px 16px rgba(0,0,0,0.25);
-          border: 2px solid white;
-        ">${id}</div>
-      </div>
-      <style>
-        @keyframes bh-ping {
-          0%   { transform: scale(1);   opacity: 0.7; }
-          80%  { transform: scale(1.8); opacity: 0; }
-          100% { transform: scale(1.8); opacity: 0; }
-        }
-      </style>
-    `,
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
-  });
-}
+const mapContainerStyle = {
+  width: "100%",
+  height: "100%",
+};
 
 // Haversine distance in km
 function haversineKm(a: [number, number], b: [number, number]) {
@@ -87,53 +41,31 @@ export function FleetMap({
   showUserLocation = true,
   showAccessibleList = true,
 }: Props) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<L.Map | null>(null);
-  const markersRef = useRef<Map<string, L.Marker>>(new Map());
-  const userMarkerRef = useRef<L.Marker | null>(null);
-  const userAccuracyRef = useRef<L.Circle | null>(null);
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "AIzaSyAFwqoFJGkXhGllBWdfRS-2PKtWhGiVKRk",
+  });
+
+  const mapRef = useRef<google.maps.Map | null>(null);
   const watchIdRef = useRef<number | null>(null);
-  const [ready, setReady] = useState(false);
   const [userPos, setUserPos] = useState<[number, number] | null>(null);
   const [geoError, setGeoError] = useState<string | null>(null);
   const [focusedId, setFocusedId] = useState<string | null>(null);
+  const [activePopup, setActivePopup] = useState<string | null>(null);
 
-  const initialCenter = useMemo<[number, number]>(() => {
-    if (buses.length === 0) return [19.076, 72.8777];
+  const initialCenter = useMemo(() => {
+    if (buses.length === 0) return { lat: 19.076, lng: 72.8777 };
     const lat = buses.reduce((s, b) => s + b.lat, 0) / buses.length;
     const lng = buses.reduce((s, b) => s + b.lng, 0) / buses.length;
-    return [lat, lng];
+    return { lat, lng };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    if (
-      typeof window === "undefined" ||
-      !containerRef.current ||
-      mapRef.current
-    )
-      return;
-    const map = L.map(containerRef.current, {
-      center: initialCenter,
-      zoom: 14,
-      zoomControl: true,
-      attributionControl: true,
-      keyboard: true,
-      keyboardPanDelta: 80,
-    });
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: "&copy; OpenStreetMap",
-    }).addTo(map);
+  const onLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map;
-    setReady(true);
-    return () => {
-      map.remove();
-      mapRef.current = null;
-      markersRef.current.clear();
-      userMarkerRef.current = null;
-      userAccuracyRef.current = null;
-    };
-  }, [initialCenter]);
+  }, []);
+
+  const onUnmount = useCallback(() => {
+    mapRef.current = null;
+  }, []);
 
   useEffect(() => {
     if (
@@ -160,31 +92,6 @@ export function FleetMap({
     };
   }, [showUserLocation]);
 
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !ready || !userPos) return;
-    if (!userMarkerRef.current) {
-      userMarkerRef.current = L.marker(userPos, {
-        icon: userIcon(),
-        keyboard: true,
-        alt: "Your current location",
-        title: "Your current location",
-      }).addTo(map);
-      userMarkerRef.current.bindPopup("<strong>You are here</strong>");
-      userAccuracyRef.current = L.circle(userPos, {
-        radius: 60,
-        color: "oklch(0.55 0.2 145)",
-        fillColor: "oklch(0.62 0.18 145)",
-        fillOpacity: 0.1,
-        weight: 1,
-      }).addTo(map);
-      map.setView(userPos, 15);
-    } else {
-      userMarkerRef.current.setLatLng(userPos);
-      userAccuracyRef.current?.setLatLng(userPos);
-    }
-  }, [userPos, ready]);
-
   // Distances + sorted list
   const enriched = useMemo(() => {
     const list = buses.map((b) => ({
@@ -195,74 +102,31 @@ export function FleetMap({
     return list;
   }, [buses, userPos]);
 
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !ready) return;
-    const seen = new Set<string>();
-    for (const b of buses) {
-      seen.add(b.id);
-      const existing = markersRef.current.get(b.id);
-      const icon = busIcon(b.id, b.id === highlightId || b.id === focusedId);
-      const label = `Bus ${b.id} on ${b.route}, driver ${b.driver}, status ${b.status}, ETA ${b.eta}`;
-      if (existing) {
-        existing.setLatLng([b.lat, b.lng]);
-        existing.setIcon(icon);
-      } else {
-        const m = L.marker([b.lat, b.lng], {
-          icon,
-          keyboard: true,
-          alt: label,
-          title: label,
-          riseOnHover: true,
-        }).addTo(map);
-        m.bindPopup(
-          `<strong>Bus ${b.id}</strong><br/>${b.route} • ${b.driver}<br/>Status: ${b.status}<br/>ETA ${b.eta}`,
-        );
-        // Add ARIA role on the underlying DOM element
-        const el = m.getElement();
-        if (el) {
-          el.setAttribute("role", "button");
-          el.setAttribute("aria-label", label);
-          el.setAttribute("tabindex", "0");
-        }
-        markersRef.current.set(b.id, m);
-      }
-    }
-    for (const [id, m] of markersRef.current.entries()) {
-      if (!seen.has(id)) {
-        m.remove();
-        markersRef.current.delete(id);
-      }
-    }
-  }, [buses, highlightId, focusedId, ready]);
-
   const recenter = () => {
     const map = mapRef.current;
     if (!map) return;
     if (userPos && buses.length) {
-      const bounds = L.latLngBounds([
-        userPos,
-        ...buses.map((b) => [b.lat, b.lng] as [number, number]),
-      ]);
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 });
+      const bounds = new window.google.maps.LatLngBounds();
+      bounds.extend({ lat: userPos[0], lng: userPos[1] });
+      buses.forEach((b) => bounds.extend({ lat: b.lat, lng: b.lng }));
+      map.fitBounds(bounds);
     } else if (userPos) {
-      map.setView(userPos, 16);
+      map.panTo({ lat: userPos[0], lng: userPos[1] });
+      map.setZoom(16);
     } else if (buses.length) {
-      map.setView([buses[0].lat, buses[0].lng], 15);
+      map.panTo({ lat: buses[0].lat, lng: buses[0].lng });
+      map.setZoom(15);
     }
   };
 
   const focusBus = (id: string) => {
     const map = mapRef.current;
-    const marker = markersRef.current.get(id);
-    if (!map || !marker) return;
+    const b = buses.find((b) => b.id === id);
+    if (!map || !b) return;
     setFocusedId(id);
-    map.setView(marker.getLatLng(), Math.max(map.getZoom(), 16), {
-      animate: true,
-    });
-    marker.openPopup();
-    const el = marker.getElement();
-    if (el) (el as HTMLElement).focus?.();
+    setActivePopup(id);
+    map.panTo({ lat: b.lat, lng: b.lng });
+    map.setZoom(Math.max(map.getZoom() || 16, 16));
   };
 
   const onListKeyDown = (e: React.KeyboardEvent<HTMLLIElement>, id: string) => {
@@ -272,17 +136,84 @@ export function FleetMap({
     }
   };
 
+  if (loadError) {
+    return <div className="p-4 bg-destructive/10 text-destructive rounded-xl">Error loading Google Maps</div>;
+  }
+
+  if (!isLoaded) {
+    return <div className="flex h-full w-full items-center justify-center p-4"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div></div>;
+  }
+
   return (
     <div
       className={`relative ${className ?? "h-full w-full"}`}
       style={{ minHeight: 320 }}
     >
-      <div
-        ref={containerRef}
-        className="h-full w-full"
-        role="application"
-        aria-label="Interactive live fleet map. Use arrow keys to pan, plus and minus to zoom, and Tab to move between bus markers."
-      />
+      <GoogleMap
+        mapContainerStyle={mapContainerStyle}
+        center={initialCenter}
+        zoom={14}
+        onLoad={onLoad}
+        onUnmount={onUnmount}
+        options={{
+          mapTypeControl: false,
+          streetViewControl: false,
+        }}
+      >
+        {userPos && (
+          <OverlayView
+            position={{ lat: userPos[0], lng: userPos[1] }}
+            mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+          >
+            <div style={{ position: "absolute", transform: "translate(-50%, -50%)" }}>
+              <div style={{ position: "relative" }}>
+                <span style={{ position: "absolute", inset: -8, borderRadius: 9999, background: "oklch(0.62 0.18 145 / 0.3)", animation: "ping 1.6s cubic-bezier(0,0,0.2,1) infinite" }}></span>
+                <div style={{ position: "relative", width: 18, height: 18, borderRadius: 9999, background: "oklch(0.55 0.2 145)", border: "3px solid white", boxShadow: "0 4px 12px rgba(0,0,0,0.3)" }}></div>
+              </div>
+            </div>
+          </OverlayView>
+        )}
+
+        {buses.map((b) => {
+          const isHighlighted = b.id === highlightId || b.id === focusedId;
+          const bgOuter = isHighlighted ? "oklch(0.65 0.18 25 / 0.35)" : "oklch(0.62 0.13 235 / 0.35)";
+          const bgInner = isHighlighted ? "oklch(0.55 0.2 25)" : "oklch(0.45 0.15 250)";
+          
+          return (
+            <OverlayView
+              key={b.id}
+              position={{ lat: b.lat, lng: b.lng }}
+              mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+            >
+              <div 
+                style={{ position: "absolute", transform: "translate(-50%, -50%)", cursor: "pointer" }}
+                onClick={() => {
+                  setActivePopup(activePopup === b.id ? null : b.id);
+                  setFocusedId(b.id);
+                }}
+              >
+                <div style={{ position: "relative" }}>
+                  <span style={{ position: "absolute", inset: -6, borderRadius: 9999, background: bgOuter, animation: "ping 1.6s cubic-bezier(0,0,0.2,1) infinite" }}></span>
+                  <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: 9999, background: bgInner, color: "white", fontWeight: 700, fontSize: 12, border: "2px solid white", boxShadow: "0 6px 16px rgba(0,0,0,0.25)" }}>
+                    {b.id}
+                  </div>
+                </div>
+
+                {activePopup === b.id && (
+                  <div style={{ position: "absolute", bottom: "100%", left: "50%", transform: "translate(-50%, -12px)", background: "white", padding: "8px 12px", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", minWidth: 160, zIndex: 50 }}>
+                    <div style={{ fontWeight: 600, fontSize: 14, color: "#111" }}>Bus {b.id}</div>
+                    <div style={{ fontSize: 12, color: "#666" }}>{b.route} • {b.driver}</div>
+                    <div style={{ fontSize: 12, marginTop: 4, color: "#111" }}>Status: <span style={{ fontWeight: 500 }}>{b.status}</span></div>
+                    <div style={{ fontSize: 12, color: "#111" }}>ETA: {b.eta}</div>
+                    <div style={{ position: "absolute", bottom: -6, left: "50%", transform: "translateX(-50%)", width: 0, height: 0, borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderTop: "6px solid white" }}></div>
+                  </div>
+                )}
+              </div>
+            </OverlayView>
+          );
+        })}
+      </GoogleMap>
+
       <button
         type="button"
         onClick={recenter}
@@ -296,6 +227,7 @@ export function FleetMap({
       >
         {userPos ? "Center my location" : "Locate me"}
       </button>
+      
       {geoError && (
         <div
           role="alert"
