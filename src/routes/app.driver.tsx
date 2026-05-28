@@ -357,6 +357,7 @@ function DriverDashboard() {
             <TableRow>
               <TableHead className="w-12">#</TableHead>
               <TableHead>Name</TableHead>
+              <TableHead>Roll No</TableHead>
               <TableHead>Drop Address</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Action</TableHead>
@@ -367,6 +368,7 @@ function DriverDashboard() {
               <TableRow key={s.id}>
                 <TableCell className="text-muted-foreground">{i + 1}</TableCell>
                 <TableCell className="font-medium">{s.name}</TableCell>
+                <TableCell className="text-muted-foreground">{s.student_roll_no || "N/A"}</TableCell>
                 <TableCell className="text-muted-foreground">
                   {s.drop_address}
                 </TableCell>

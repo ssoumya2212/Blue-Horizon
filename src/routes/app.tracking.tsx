@@ -27,13 +27,13 @@ function Tracking() {
         <Badge
           variant="outline"
           className={
-            trackingSource === "firebase"
-              ? "border-success/30 bg-success/10 text-success"
-              : "border-primary/30 bg-primary/10 text-primary"
+            trackingSource === "supabase"
+              ? "border-primary/30 bg-primary/10 text-primary"
+              : "border-success/30 bg-success/10 text-success"
           }
         >
           <Radio className="mr-1 h-3 w-3 animate-pulse" />
-          {trackingSource === "firebase" ? "Firebase live" : "Live (simulated)"}
+          Live (Supabase)
         </Badge>
       </div>
       <div className="grid gap-6 lg:grid-cols-3">

@@ -1,12 +1,5 @@
-// Realtime fleet positions.
-// - When Firebase is configured (VITE_FIREBASE_*), subscribes to /buses in
-//   the Realtime Database. Each bus document is expected to look like:
-//     { id, route, driver, status, eta, lat, lng }
-// - Otherwise, runs a local simulator that nudges bus coordinates every
-//   2 seconds so the UI behaves as if positions were streaming in.
 import { useEffect, useState } from "react";
-import { onValue, ref } from "firebase/database";
-import { firebaseEnabled, getFirebaseDb } from "./firebase";
+import { supabase } from "./supabase";
 
 export type BusPosition = {
   id: string;
@@ -18,8 +11,7 @@ export type BusPosition = {
   lng: number;
 };
 
-// Centered around a generic city grid (Mumbai-ish coords) so the map has
-// something recognisable. Replace with your own depot coordinates.
+// Default seed coordinates (Chennai) used only as fallback if no live location exists
 const seed: BusPosition[] = [
   {
     id: "007",
@@ -27,8 +19,8 @@ const seed: BusPosition[] = [
     driver: "Ravi S.",
     status: "On Route",
     eta: "3:30 PM",
-    lat: 19.076,
-    lng: 72.8777,
+    lat: 13.0855,
+    lng: 80.2035,
   },
   {
     id: "012",
@@ -36,8 +28,8 @@ const seed: BusPosition[] = [
     driver: "Sahil K.",
     status: "Delay",
     eta: "3:42 PM",
-    lat: 19.082,
-    lng: 72.873,
+    lat: 13.0890,
+    lng: 80.2000,
   },
   {
     id: "018",
@@ -45,8 +37,8 @@ const seed: BusPosition[] = [
     driver: "Rita J.",
     status: "On Route",
     eta: "3:51 PM",
-    lat: 19.072,
-    lng: 72.882,
+    lat: 13.0820,
+    lng: 80.2050,
   },
   {
     id: "021",
@@ -54,56 +46,70 @@ const seed: BusPosition[] = [
     driver: "Vikas P.",
     status: "Idle",
     eta: "—",
-    lat: 19.078,
-    lng: 72.87,
+    lat: 13.0850,
+    lng: 80.2030,
   },
 ];
 
 let positions: BusPosition[] = [...seed];
 const listeners = new Set<(p: BusPosition[]) => void>();
-let simulatorStarted = false;
 
 function emit() {
-  listeners.forEach((l) => l(positions));
+  listeners.forEach((l) => l([...positions]));
 }
 
-function startSimulator() {
-  if (simulatorStarted || typeof window === "undefined") return;
-  simulatorStarted = true;
-  setInterval(() => {
-    positions = positions.map((b) =>
-      b.status === "Idle"
-        ? b
-        : {
-            ...b,
-            lat: b.lat + (Math.random() - 0.5) * 0.0008,
-            lng: b.lng + (Math.random() - 0.5) * 0.0008,
-          },
-    );
-    emit();
-  }, 2000);
-}
+function startSupabaseTracking() {
+  // Fetch initial locations
+  supabase
+    .from("bus_locations")
+    .select("*")
+    .then(({ data }) => {
+      if (data) {
+        let updated = false;
+        data.forEach((loc) => {
+          const idx = positions.findIndex((p) => p.id === loc.bus_id);
+          if (idx !== -1) {
+            positions[idx] = {
+              ...positions[idx],
+              lat: Number(loc.latitude),
+              lng: Number(loc.longitude),
+            };
+            updated = true;
+          }
+        });
+        if (updated) emit();
+      }
+    });
 
-function startFirebase() {
-  const db = getFirebaseDb();
-  if (!db) return;
-  onValue(ref(db, "buses"), (snap) => {
-    const val = snap.val();
-    if (!val) return;
-    const next: BusPosition[] = Array.isArray(val)
-      ? val.filter(Boolean)
-      : Object.values(val);
-    positions = next;
-    emit();
-  });
+  // Subscribe to changes
+  supabase
+    .channel("tracking_bus_locations")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "bus_locations" },
+      (payload) => {
+        const newLoc = payload.new as any;
+        if (newLoc && newLoc.bus_id) {
+          const idx = positions.findIndex((p) => p.id === newLoc.bus_id);
+          if (idx !== -1) {
+            positions[idx] = {
+              ...positions[idx],
+              lat: Number(newLoc.latitude),
+              lng: Number(newLoc.longitude),
+            };
+            emit();
+          }
+        }
+      },
+    )
+    .subscribe();
 }
 
 let started = false;
 function ensureStarted() {
   if (started || typeof window === "undefined") return;
   started = true;
-  if (firebaseEnabled) startFirebase();
-  else startSimulator();
+  startSupabaseTracking();
 }
 
 export function useFleetPositions() {
@@ -111,7 +117,7 @@ export function useFleetPositions() {
   useEffect(() => {
     ensureStarted();
     listeners.add(setState);
-    setState(positions);
+    setState([...positions]);
     return () => {
       listeners.delete(setState);
     };
@@ -119,6 +125,4 @@ export function useFleetPositions() {
   return state;
 }
 
-export const trackingSource: "firebase" | "simulated" = firebaseEnabled
-  ? "firebase"
-  : "simulated";
+export const trackingSource = "supabase";

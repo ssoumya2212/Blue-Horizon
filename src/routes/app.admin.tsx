@@ -76,7 +76,7 @@ const activity = [
   {
     id: 1,
     who: "Bus 007",
-    what: "Departed from Oak Street",
+    what: "Departed from Anna Nagar Roundana",
     time: "2 min ago",
     status: "On Route",
   },
@@ -523,7 +523,7 @@ function AddEntityDialog({
       icon: Bus,
       fields: [
         { name: "busNumber", label: "Bus number", placeholder: "e.g. Bus 015" },
-        { name: "plate", label: "Plate number", placeholder: "MH-12-AB-1234" },
+        { name: "plate", label: "Plate number", placeholder: "TN-01-AB-1234" },
         {
           name: "capacity",
           label: "Capacity",
@@ -543,7 +543,7 @@ function AddEntityDialog({
         {
           name: "licence",
           label: "Licence number",
-          placeholder: "MH-12-AB-9999",
+          placeholder: "TN-01-AB-9999",
         },
         { name: "route", label: "Assigned route", placeholder: "Route A" },
       ],
@@ -570,8 +570,8 @@ function AddEntityDialog({
       icon: RouteIcon,
       fields: [
         { name: "name", label: "Route name", placeholder: "Route G" },
-        { name: "start", label: "Start point", placeholder: "Oak Street" },
-        { name: "end", label: "End point", placeholder: "School Gate" },
+        { name: "start", label: "Start point", placeholder: "Anna Nagar Roundana" },
+        { name: "end", label: "End point", placeholder: "Blue Horizon Int. School" },
         {
           name: "stops",
           label: "Number of stops",

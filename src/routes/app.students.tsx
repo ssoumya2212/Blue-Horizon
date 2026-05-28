@@ -35,6 +35,7 @@ export const Route = createFileRoute("/app/students")({
 type Student = {
   id?: number;
   name: string;
+  student_roll_no?: string;
   class: string;
   stop: string;
 };
@@ -59,10 +60,10 @@ function Students() {
     } else {
       // Fallback for demo when Supabase table is empty
       setStudents([
-        { id: 1, name: "Aarav Sharma", class: "10-A", stop: "Oak Street" },
-        { id: 2, name: "Kiara Patel", class: "8-B", stop: "Maple Drive" },
-        { id: 3, name: "Vihaan Singh", class: "12-C", stop: "Pine Avenue" },
-        { id: 4, name: "Ananya Gupta", class: "9-A", stop: "Cedar Lane" },
+        { id: 1, name: "Aarav Sharma", student_roll_no: "202601", class: "10-A", stop: "Anna Nagar Roundana" },
+        { id: 2, name: "Kiara Patel", student_roll_no: "202602", class: "8-B", stop: "Maple Drive" },
+        { id: 3, name: "Vihaan Singh", student_roll_no: "202603", class: "12-C", stop: "Pine Avenue" },
+        { id: 4, name: "Ananya Gupta", student_roll_no: "202604", class: "9-A", stop: "Cedar Lane" },
       ]);
     }
 
@@ -77,6 +78,7 @@ function Students() {
 
     const newStudent = {
       name: String(formData.get("name")),
+      student_roll_no: String(formData.get("student_roll_no")),
       class: String(formData.get("class")),
       stop: String(formData.get("stop")),
     };
@@ -115,6 +117,7 @@ function Students() {
             <TableRow>
               <TableHead>ID</TableHead>
               <TableHead>Name</TableHead>
+              <TableHead>Roll No</TableHead>
               <TableHead>Class</TableHead>
               <TableHead>Stop</TableHead>
             </TableRow>
@@ -137,11 +140,9 @@ function Students() {
               students.map((student) => (
                 <TableRow key={student.id}>
                   <TableCell>{student.id}</TableCell>
-
                   <TableCell className="font-medium">{student.name}</TableCell>
-
+                  <TableCell>{student.student_roll_no || "N/A"}</TableCell>
                   <TableCell>{student.class}</TableCell>
-
                   <TableCell>{student.stop}</TableCell>
                 </TableRow>
               ))
@@ -167,6 +168,11 @@ function Students() {
                 <Label htmlFor="name">Student Name</Label>
 
                 <Input id="name" name="name" placeholder="Soumya" required />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="student_roll_no">Roll No</Label>
+                <Input id="student_roll_no" name="student_roll_no" placeholder="2026123" required />
               </div>
 
               <div className="grid gap-2">

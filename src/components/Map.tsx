@@ -2,8 +2,8 @@ import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
 import { useEffect, useState } from "react";
 
 const center = {
-  lat: 13.0827,
-  lng: 80.2707,
+  lat: 13.0850,
+  lng: 80.2030,
 };
 
 export default function Map({
@@ -34,6 +34,7 @@ export default function Map({
         center={position}
         zoom={15}
       >
+        <Marker position={center} title="Blue Horizon International School" label="🏫" />
         <Marker position={position} title="School Bus" label="🚍" />
       </GoogleMap>
     </LoadScript>

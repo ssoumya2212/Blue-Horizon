@@ -178,16 +178,16 @@ function LandingPage() {
                 <div className="space-y-2">
                   {[
                     {
-                      stop: "Oak Street & 5th Ave",
+                      stop: "Anna Nagar Roundana",
                       time: "3:25 PM",
                       tag: "Current",
                     },
                     {
-                      stop: "Blue Horizon Elementary",
+                      stop: "Blue Horizon International School",
                       time: "3:30 PM",
                       tag: "Next",
                     },
-                    { stop: "Central Park Stop", time: "3:35 PM", tag: "" },
+                    { stop: "T. Nagar Bus Terminus", time: "3:35 PM", tag: "" },
                   ].map((s) => (
                     <div
                       key={s.stop}

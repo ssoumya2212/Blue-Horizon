@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { sendTwilioOtp, verifyTwilioOtp } from "@/server-functions/auth";
 
 // SIGN UP
 export const signUp = async (email: string, password: string) => {
@@ -44,24 +45,28 @@ export const getCurrentUser = async () => {
   return data.user;
 };
 
-// SEND OTP
+// SEND OTP (Using Twilio)
 export const sendOtp = async (phone: string) => {
-  const { data, error } = await supabase.auth.signInWithOtp({
-    phone,
-  });
-
-  if (error) {
-    return { error: error.message, data: null };
+  const res = await sendTwilioOtp({ data: phone });
+  
+  if (!res.success) {
+    return { error: res.error || "Failed to send OTP", data: null };
   }
-  return { error: null, data };
+  return { error: null, data: res };
 };
 
-// VERIFY OTP (PHONE)
+// VERIFY OTP (Using Twilio)
 export const verifyOtp = async (phone: string, token: string) => {
-  const { data, error } = await supabase.auth.verifyOtp({
-    phone,
-    token,
-    type: "sms",
+  const res = await verifyTwilioOtp({ data: { phone, code: token } });
+
+  if (!res.success || !res.tempPassword) {
+    return { error: res.error || "Invalid OTP code", data: null };
+  }
+  
+  // Actually sign in the user on the client using the generated password
+  const { data, error } = await supabase.auth.signInWithPassword({
+    phone: res.phone,
+    password: res.tempPassword,
   });
 
   if (error) {

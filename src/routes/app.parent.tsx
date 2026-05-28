@@ -35,21 +35,21 @@ export const Route = createFileRoute("/app/parent")({
 
 const stops = [
   {
-    name: "Oak Street & 5th Ave",
+    name: "Anna Nagar Roundana",
     time: "3:25 PM",
-    dist: "0.8 mi away",
+    dist: "0.8 km away",
     state: "Current",
   },
   {
-    name: "Blue Horizon Elementary",
+    name: "Chennai Public School",
     time: "3:30 PM",
-    dist: "1.2 mi away",
+    dist: "1.2 km away",
     state: "Next",
   },
   {
-    name: "Central Park Stop",
+    name: "T. Nagar Bus Terminus",
     time: "3:35 PM",
-    dist: "1.8 mi away",
+    dist: "1.8 km away",
     state: "",
   },
 ];
@@ -144,7 +144,8 @@ function ParentDashboard() {
             </div>
             <div>
               <h1 className="text-2xl font-bold">{student?.name || "Aarav S"}</h1>
-              <p className="text-white/80">Bus {student?.bus_id || "007"}</p>
+              <p className="text-sm text-white/80 font-medium">Roll No: {student?.student_roll_no || "2026015"}</p>
+              <p className="text-white/80">School Bus {student?.bus_id || "007"}</p>
               <p className="mt-1 flex items-center gap-1 text-sm text-white/80">
                 <MapPin className="h-3.5 w-3.5" /> {student?.drop_address || "Loading..."}
               </p>
@@ -158,7 +159,7 @@ function ParentDashboard() {
               </Badge>
             ) : (
               <Badge className="bg-white text-primary hover:bg-white">
-                Pending Drop
+                Child is on the way
               </Badge>
             )}
             <Badge
@@ -230,7 +231,7 @@ function ParentDashboard() {
         <Card className="p-5">
           <h2 className="text-lg font-semibold">Live map</h2>
           <p className="text-xs text-muted-foreground">
-            Bus 007 —{" "}
+            School Bus —{" "}
             {lastUpdated
               ? `last updated ${formatDistanceToNow(new Date(lastUpdated), { addSuffix: true })}`
               : "waiting for location..."}

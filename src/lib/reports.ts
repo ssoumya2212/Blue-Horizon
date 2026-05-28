@@ -16,7 +16,7 @@ const seed: Report[] = [
   },
   {
     id: "r2",
-    text: "Detour applied at 8:14 AM: Construction on Oak Street.",
+    text: "Detour applied at 8:14 AM: Construction on Anna Nagar West.",
     author: "Driver Sahil",
     createdAt: Date.now() - 1000 * 60 * 60 * 5,
   },

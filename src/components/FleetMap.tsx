@@ -53,7 +53,7 @@ export function FleetMap({
   const [activePopup, setActivePopup] = useState<string | null>(null);
 
   const initialCenter = useMemo(() => {
-    if (buses.length === 0) return { lat: 19.076, lng: 72.8777 };
+    if (buses.length === 0) return { lat: 13.0850, lng: 80.2030 };
     const lat = buses.reduce((s, b) => s + b.lat, 0) / buses.length;
     const lng = buses.reduce((s, b) => s + b.lng, 0) / buses.length;
     return { lat, lng };
@@ -174,6 +174,17 @@ export function FleetMap({
           </OverlayView>
         )}
 
+        <OverlayView
+          position={{ lat: 13.0850, lng: 80.2030 }}
+          mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+        >
+          <div style={{ position: "absolute", transform: "translate(-50%, -50%)", cursor: "help" }} title="Blue Horizon International School&#10;No. 45, Green Valley Road, Anna Nagar West&#10;Chennai - 600101">
+            <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44, borderRadius: "50%", background: "white", border: "3px solid #8b5cf6", boxShadow: "0 6px 16px rgba(0,0,0,0.25)", fontSize: 24 }}>
+              🏫
+            </div>
+          </div>
+        </OverlayView>
+
         {buses.map((b) => {
           const isHighlighted = b.id === highlightId || b.id === focusedId;
           const bgOuter = isHighlighted ? "oklch(0.65 0.18 25 / 0.35)" : "oklch(0.62 0.13 235 / 0.35)";
@@ -194,15 +205,15 @@ export function FleetMap({
               >
                 <div style={{ position: "relative" }}>
                   <span style={{ position: "absolute", inset: -6, borderRadius: 9999, background: bgOuter, animation: "ping 1.6s cubic-bezier(0,0,0.2,1) infinite" }}></span>
-                  <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: 9999, background: bgInner, color: "white", fontWeight: 700, fontSize: 12, border: "2px solid white", boxShadow: "0 6px 16px rgba(0,0,0,0.25)" }}>
-                    {b.id}
+                  <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: 9999, background: bgInner, color: "white", fontWeight: 700, fontSize: 18, border: "2px solid white", boxShadow: "0 6px 16px rgba(0,0,0,0.25)" }}>
+                    🚍
                   </div>
                 </div>
 
                 {activePopup === b.id && (
                   <div style={{ position: "absolute", bottom: "100%", left: "50%", transform: "translate(-50%, -12px)", background: "white", padding: "8px 12px", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", minWidth: 160, zIndex: 50 }}>
-                    <div style={{ fontWeight: 600, fontSize: 14, color: "#111" }}>Bus {b.id}</div>
-                    <div style={{ fontSize: 12, color: "#666" }}>{b.route} • {b.driver}</div>
+                    <div style={{ fontWeight: 600, fontSize: 14, color: "#111" }}>School Bus {b.id}</div>
+                    <div style={{ fontSize: 12, color: "#666" }}>{b.route} • Driver: {b.driver}</div>
                     <div style={{ fontSize: 12, marginTop: 4, color: "#111" }}>Status: <span style={{ fontWeight: 500 }}>{b.status}</span></div>
                     <div style={{ fontSize: 12, color: "#111" }}>ETA: {b.eta}</div>
                     <div style={{ position: "absolute", bottom: -6, left: "50%", transform: "translateX(-50%)", width: 0, height: 0, borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderTop: "6px solid white" }}></div>

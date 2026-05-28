@@ -1,10 +1,10 @@
-import { GoogleMap, useJsApiLoader, Marker } from "@react-google-maps/api";
+import { GoogleMap, useJsApiLoader, Marker, OverlayView } from "@react-google-maps/api";
 import { useMemo } from "react";
 import type { BusRoute } from "@/lib/routes";
 
 const center = {
-  lat: 13.0827,
-  lng: 80.2707,
+  lat: 13.0850,
+  lng: 80.2030,
 };
 
 // Generate some dummy coordinates around the center based on the route name for demonstration
@@ -54,6 +54,17 @@ export default function RouteMap({ filtered = [] }: { filtered?: BusRoute[] }) {
         zoomControl: true,
       }}
     >
+      <OverlayView
+        position={center}
+        mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+      >
+        <div style={{ position: "absolute", transform: "translate(-50%, -50%)", cursor: "help" }} title="Blue Horizon International School&#10;No. 45, Green Valley Road, Anna Nagar West&#10;Chennai - 600101">
+          <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44, borderRadius: "50%", background: "white", border: "3px solid #8b5cf6", boxShadow: "0 6px 16px rgba(0,0,0,0.25)", fontSize: 24 }}>
+            🏫
+          </div>
+        </div>
+      </OverlayView>
+
       {markers.map((marker, i) => (
         <Marker
           key={i}
