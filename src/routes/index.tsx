@@ -122,7 +122,16 @@ function LandingPage() {
                 className="bg-emerald-500 text-white hover:bg-emerald-600"
               >
                 <Link to="/downloads">
-                  <Download className="mr-2 h-4 w-4" /> Download App
+                  <Download className="mr-2 h-4 w-4" /> Android (.apk)
+                </Link>
+              </Button>
+              <Button
+                asChild
+                size="lg"
+                className="bg-sky-500 text-white hover:bg-sky-600"
+              >
+                <Link to="/downloads">
+                  <Download className="mr-2 h-4 w-4" /> Windows (.exe)
                 </Link>
               </Button>
             </div>
