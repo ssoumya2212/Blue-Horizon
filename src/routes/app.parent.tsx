@@ -56,45 +56,76 @@ const stops = [
 
 function ParentDashboard() {
   const fleet = useFleetPositions();
-  const myBus = fleet.find((b) => b.id === "007");
 
-  const [busLocation, setBusLocation] = useState<
-    { lat: number; lng: number } | undefined
-  >();
+  const [busLocation, setBusLocation] = useState<{ lat: number; lng: number } | undefined>();
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
-  const [student, setStudent] = useState<Student | null>(null);
+  
+  const [profile, setProfile] = useState<any>(null);
+  const [student, setStudent] = useState<any>(null);
+  const [bus, setBus] = useState<any>(null);
+  const [route, setRoute] = useState<any>(null);
+  const [driver, setDriver] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  const myBus = fleet.find((b) => b.id === bus?.id || "007");
+
+  const loadData = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return setLoading(false);
+    
+    // Fetch profile
+    const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+    if (prof) setProfile(prof);
+
+    // Fallback to "Aarav S" mock roll no for demo if empty
+    const targetRollNo = prof?.student_roll_no || "2026015";
+    
+    if (targetRollNo) {
+      const { data: stud } = await supabase.from('students').select('*').eq('student_roll_no', targetRollNo).single();
+      if (stud) {
+        setStudent(stud);
+
+        const targetBusId = stud.bus_id || "007";
+        if (targetBusId) {
+          const { data: b } = await supabase.from('buses').select('*').eq('id', targetBusId).single();
+          if (b) {
+            setBus(b);
+            if (b.driver_id) {
+              const { data: drv } = await supabase.from('profiles').select('*').eq('id', b.driver_id).single();
+              if (drv) setDriver(drv);
+            }
+            if (b.route_id) {
+              const { data: r } = await supabase.from('routes').select('*').eq('id', b.route_id).single();
+              if (r) setRoute(r);
+            }
+          }
+        }
+      }
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const fetchStudent = async () => {
-      const { data } = await supabase
-        .from("students")
-        .select("*")
-        .eq("name", "Aarav S") // Using Aarav as the mock logged-in parent's child
-        .single();
-      if (data) setStudent(data);
-    };
-    fetchStudent();
+    loadData();
 
-    const studChannel = supabase
-      .channel("parent_student")
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "students", filter: "name=eq.Aarav S" },
-        (payload) => {
-          setStudent(payload.new as Student);
-        }
-      )
+    // Subscribe to all changes
+    const channel = supabase.channel('parent_dashboard_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, () => { loadData(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'buses' }, () => { loadData(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'routes' }, () => { loadData(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => { loadData(); })
       .subscribe();
 
-    return () => { studChannel.unsubscribe(); };
+    return () => { channel.unsubscribe(); };
   }, []);
 
   useEffect(() => {
+    const targetBusId = bus?.id || "007";
     const fetchInitial = async () => {
       const { data } = await supabase
         .from("bus_locations")
         .select("*")
-        .eq("bus_id", "007")
+        .eq("bus_id", targetBusId)
         .single();
       if (data) {
         setBusLocation({ lat: data.latitude, lng: data.longitude });
@@ -105,31 +136,22 @@ function ParentDashboard() {
 
     const channel = supabase
       .channel("bus_locations_changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "bus_locations",
-          filter: "bus_id=eq.007",
-        },
-        (payload) => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "bus_locations", filter: `bus_id=eq.${targetBusId}` }, (payload) => {
           const newLoc = payload.new as Record<string, unknown>;
           if (newLoc) {
-            setBusLocation({
-              lat: Number(newLoc.latitude),
-              lng: Number(newLoc.longitude),
-            });
+            setBusLocation({ lat: Number(newLoc.latitude), lng: Number(newLoc.longitude) });
             setLastUpdated(String(newLoc.updated_at));
           }
-        },
+        }
       )
       .subscribe();
 
-    return () => {
-      channel.unsubscribe();
-    };
-  }, []);
+    return () => { channel.unsubscribe(); };
+  }, [bus?.id]);
+
+  if (loading) {
+    return <div className="p-8 text-center animate-pulse text-muted-foreground flex items-center justify-center h-40">Loading your child's tracking details...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -145,7 +167,7 @@ function ParentDashboard() {
             <div>
               <h1 className="text-2xl font-bold">{student?.name || "Aarav S"}</h1>
               <p className="text-sm text-white/80 font-medium">Roll No: {student?.student_roll_no || "2026015"}</p>
-              <p className="text-white/80">School Bus {student?.bus_id || "007"}</p>
+              <p className="text-white/80">School Bus {bus?.id || "007"}</p>
               <p className="mt-1 flex items-center gap-1 text-sm text-white/80">
                 <MapPin className="h-3.5 w-3.5" /> {student?.drop_address || "Loading..."}
               </p>
@@ -190,7 +212,7 @@ function ParentDashboard() {
         <Card className="p-5 lg:col-span-2">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold">Upcoming stops</h2>
-            <Badge variant="outline">Route A</Badge>
+            <Badge variant="outline">{route?.name || "Route A"}</Badge>
           </div>
           <ul className="space-y-2">
             {stops.map((s) => (
@@ -249,21 +271,29 @@ function ParentDashboard() {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Button
           variant="outline"
-          className="h-14 justify-start gap-3 border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary"
+          className="h-14 justify-start gap-3 border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary flex-col items-start py-2 px-4"
           onClick={() => {
-            window.location.href = "tel:+919876543210";
+            window.location.href = `tel:${driver?.phone || "+919876543210"}`;
           }}
         >
-          <Phone className="h-5 w-5" /> Call Driver
+          <div className="flex items-center gap-2">
+            <Phone className="h-4 w-4" /> 
+            <span className="font-semibold text-sm">Call Driver</span>
+          </div>
+          <span className="text-xs text-primary/70">{driver?.full_name || "Unknown Driver"}</span>
         </Button>
         <Button
           variant="outline"
-          className="h-14 justify-start gap-3 border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary"
+          className="h-14 justify-start gap-3 border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary flex-col items-start py-2 px-4"
           onClick={() => {
             window.location.href = "tel:+18005550199";
           }}
         >
-          <Phone className="h-5 w-5" /> Call School
+          <div className="flex items-center gap-2">
+            <Phone className="h-4 w-4" /> 
+            <span className="font-semibold text-sm">Call School</span>
+          </div>
+          <span className="text-xs text-primary/70">Support</span>
         </Button>
         <Link to="/app/reports">
           <Button

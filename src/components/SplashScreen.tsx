@@ -8,8 +8,8 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsVisible(false);
-      setTimeout(onComplete, 800); // Wait for exit animation to finish
-    }, 2500);
+      setTimeout(onComplete, 300); // Wait for exit animation to finish
+    }, 800);
 
     return () => clearTimeout(timer);
   }, [onComplete]);

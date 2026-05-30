@@ -154,13 +154,6 @@ function LoginPage() {
                 >
                   {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "LOGIN"}
                 </Button>
-                
-                <div className="text-center mt-4 text-sm text-muted-foreground">
-                  Don't have an account?{" "}
-                  <Link to="/signup" className="font-semibold text-primary hover:underline">
-                    Create Account
-                  </Link>
-                </div>
               </form>
             </div>
           </Tabs>

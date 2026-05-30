@@ -100,3 +100,16 @@ export const verifyEmailOtp = async (email: string, token: string) => {
   }
   return { error: null, data };
 };
+
+// UPDATE PASSWORD
+export const updatePassword = async (password: string) => {
+  const { data, error } = await supabase.auth.updateUser({
+    password: password
+  });
+
+  if (error) {
+    return { error: error.message, data: null };
+  }
+
+  return { error: null, data };
+};

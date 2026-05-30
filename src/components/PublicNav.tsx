@@ -9,6 +9,7 @@ const links = [
   { to: "/", label: "Home" },
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
+  { to: "/downloads", label: "Downloads" },
 ];
 
 export function PublicNav() {

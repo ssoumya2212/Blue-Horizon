@@ -13,6 +13,7 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as DownloadsRouteImport } from './routes/downloads'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as AboutRouteImport } from './routes/about'
@@ -48,6 +49,11 @@ const LoginRoute = LoginRouteImport.update({
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   id: '/forgot-password',
   path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DownloadsRoute = DownloadsRouteImport.update({
+  id: '/downloads',
+  path: '/downloads',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContactRoute = ContactRouteImport.update({
@@ -136,6 +142,7 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/app': typeof AppRouteWithChildren
   '/contact': typeof ContactRoute
+  '/downloads': typeof DownloadsRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
@@ -158,6 +165,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/app': typeof AppRouteWithChildren
   '/contact': typeof ContactRoute
+  '/downloads': typeof DownloadsRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
@@ -181,6 +189,7 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/app': typeof AppRouteWithChildren
   '/contact': typeof ContactRoute
+  '/downloads': typeof DownloadsRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
@@ -205,6 +214,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/app'
     | '/contact'
+    | '/downloads'
     | '/forgot-password'
     | '/login'
     | '/privacy'
@@ -227,6 +237,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/app'
     | '/contact'
+    | '/downloads'
     | '/forgot-password'
     | '/login'
     | '/privacy'
@@ -249,6 +260,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/app'
     | '/contact'
+    | '/downloads'
     | '/forgot-password'
     | '/login'
     | '/privacy'
@@ -272,6 +284,7 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   AppRoute: typeof AppRouteWithChildren
   ContactRoute: typeof ContactRoute
+  DownloadsRoute: typeof DownloadsRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   PrivacyRoute: typeof PrivacyRoute
@@ -306,6 +319,13 @@ declare module '@tanstack/react-router' {
       path: '/forgot-password'
       fullPath: '/forgot-password'
       preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/downloads': {
+      id: '/downloads'
+      path: '/downloads'
+      fullPath: '/downloads'
+      preLoaderRoute: typeof DownloadsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contact': {
@@ -460,6 +480,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   AppRoute: AppRouteWithChildren,
   ContactRoute: ContactRoute,
+  DownloadsRoute: DownloadsRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   PrivacyRoute: PrivacyRoute,

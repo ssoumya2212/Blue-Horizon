@@ -239,14 +239,7 @@ export function FleetMap({
         {userPos ? "Center my location" : "Locate me"}
       </button>
       
-      {geoError && (
-        <div
-          role="alert"
-          className="absolute bottom-3 left-3 z-[400] rounded-md bg-destructive/90 px-3 py-1.5 text-xs text-white shadow"
-        >
-          {geoError}
-        </div>
-      )}
+
 
       {/* Screen-reader live region with summary */}
       <div className="sr-only" aria-live="polite" aria-atomic="true">

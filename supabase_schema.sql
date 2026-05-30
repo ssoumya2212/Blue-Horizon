@@ -64,7 +64,77 @@ CREATE POLICY "Drivers can insert drop logs."
     ON public.drop_logs FOR INSERT
     WITH CHECK ( true ); -- You can restrict this to auth.uid() matching a driver profile
 
--- 4. Enable Realtime for all tables
+-- 4. Create ROUTES table
+CREATE TABLE IF NOT EXISTS public.routes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.routes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Routes viewable by everyone." ON public.routes FOR SELECT USING (true);
+CREATE POLICY "Admins can insert routes." ON public.routes FOR INSERT WITH CHECK (true);
+
+-- 5. Create BUSES table
+CREATE TABLE IF NOT EXISTS public.buses (
+    id TEXT PRIMARY KEY,
+    route_id UUID REFERENCES public.routes(id) ON DELETE SET NULL,
+    driver_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    capacity INTEGER DEFAULT 40,
+    status TEXT DEFAULT 'active',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.buses ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Buses viewable by everyone." ON public.buses FOR SELECT USING (true);
+
+-- 6. Add relationships to STUDENTS table
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_schema='public' AND table_name='students' AND column_name='route_id') THEN
+        ALTER TABLE public.students ADD COLUMN route_id UUID REFERENCES public.routes(id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_schema='public' AND table_name='students' AND column_name='bus_id') THEN
+        ALTER TABLE public.students ADD COLUMN bus_id TEXT REFERENCES public.buses(id) ON DELETE SET NULL;
+    END IF;
+END $$;
+
+-- 7. Enable Realtime for all tables
 alter publication supabase_realtime add table profiles;
 alter publication supabase_realtime add table students;
 alter publication supabase_realtime add table drop_logs;
+alter publication supabase_realtime add table routes;
+alter publication supabase_realtime add table buses;
+
+-- 8. Create APP_RELEASES table
+CREATE TABLE IF NOT EXISTS public.app_releases (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    version TEXT NOT NULL,
+    platform TEXT NOT NULL CHECK (platform IN ('android', 'windows')),
+    file_url TEXT NOT NULL,
+    file_size TEXT,
+    release_notes TEXT,
+    is_latest BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.app_releases ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "App releases are viewable by everyone."
+    ON public.app_releases FOR SELECT
+    USING ( true );
+
+CREATE POLICY "Admins can insert app releases."
+    ON public.app_releases FOR INSERT
+    WITH CHECK ( true ); -- You can restrict this to role='admin' in application logic or RLS
+
+CREATE POLICY "Admins can update app releases."
+    ON public.app_releases FOR UPDATE
+    USING ( true );
+
+CREATE POLICY "Admins can delete app releases."
+    ON public.app_releases FOR DELETE
+    USING ( true );

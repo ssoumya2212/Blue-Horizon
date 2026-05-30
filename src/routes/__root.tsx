@@ -128,8 +128,10 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 import { Button } from "@/components/ui/button";
 import { MapPin, Bell, ShieldCheck } from "lucide-react";
+import { useAutoUpdate } from "@/hooks/useAutoUpdate";
 
 function RootComponent() {
+  useAutoUpdate();
   const { queryClient } = Route.useRouteContext();
   const [showSplash, setShowSplash] = useState(true);
 
