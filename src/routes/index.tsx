@@ -121,18 +121,18 @@ function LandingPage() {
                 size="lg"
                 className="bg-emerald-500 text-white hover:bg-emerald-600"
               >
-                <Link to="/downloads">
+                <a href="/Blue-Horizon-App.apk" download>
                   <Download className="mr-2 h-4 w-4" /> Android (.apk)
-                </Link>
+                </a>
               </Button>
               <Button
                 asChild
                 size="lg"
                 className="bg-sky-500 text-white hover:bg-sky-600"
               >
-                <Link to="/downloads">
+                <a href="/Blue-Horizon-Setup.exe" download>
                   <Download className="mr-2 h-4 w-4" /> Windows (.exe)
-                </Link>
+                </a>
               </Button>
             </div>
 

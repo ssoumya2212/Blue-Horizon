@@ -59,29 +59,27 @@ function DownloadsPage() {
                     <div className="h-4 bg-muted rounded w-3/4"></div>
                     <div className="h-4 bg-muted rounded w-1/2"></div>
                   </div>
-                ) : androidRelease ? (
+                ) : (
                   <>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <span className="text-muted-foreground">Version:</span>
-                      <span className="font-medium text-right">{androidRelease.version}</span>
+                      <span className="font-medium text-right">{androidRelease?.version || "1.0.0"}</span>
                       
                       <span className="text-muted-foreground">Size:</span>
-                      <span className="font-medium text-right">{androidRelease.file_size || "Unknown"}</span>
+                      <span className="font-medium text-right">{androidRelease?.file_size || "13 MB"}</span>
                       
                       <span className="text-muted-foreground">Released:</span>
                       <span className="font-medium text-right">
-                        {new Date(androidRelease.created_at).toLocaleDateString()}
+                        {androidRelease ? new Date(androidRelease.created_at).toLocaleDateString() : new Date().toLocaleDateString()}
                       </span>
                     </div>
-                    {androidRelease.release_notes && (
+                    {androidRelease?.release_notes && (
                       <div className="mt-4 text-sm bg-muted/50 p-3 rounded-lg border">
                         <p className="font-semibold mb-1 flex items-center gap-1"><Info className="h-3 w-3" /> Release Notes</p>
                         <p className="text-muted-foreground">{androidRelease.release_notes}</p>
                       </div>
                     )}
                   </>
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center italic py-4">No Android release available yet.</p>
                 )}
               </div>
               
@@ -89,15 +87,10 @@ function DownloadsPage() {
                 asChild 
                 size="lg" 
                 className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
-                disabled={!androidRelease}
               >
-                {androidRelease ? (
-                  <a href={androidRelease.file_url} download>
-                    <Download className="mr-2 h-5 w-5" /> Download APK
-                  </a>
-                ) : (
-                  <span>Coming Soon</span>
-                )}
+                <a href={androidRelease?.file_url || "/Blue-Horizon-App.apk"} download>
+                  <Download className="mr-2 h-5 w-5" /> Download APK
+                </a>
               </Button>
             </div>
           </Card>
@@ -118,29 +111,27 @@ function DownloadsPage() {
                     <div className="h-4 bg-muted rounded w-3/4"></div>
                     <div className="h-4 bg-muted rounded w-1/2"></div>
                   </div>
-                ) : windowsRelease ? (
+                ) : (
                   <>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <span className="text-muted-foreground">Version:</span>
-                      <span className="font-medium text-right">{windowsRelease.version}</span>
+                      <span className="font-medium text-right">{windowsRelease?.version || "1.0.0"}</span>
                       
                       <span className="text-muted-foreground">Size:</span>
-                      <span className="font-medium text-right">{windowsRelease.file_size || "Unknown"}</span>
+                      <span className="font-medium text-right">{windowsRelease?.file_size || "65 MB"}</span>
                       
                       <span className="text-muted-foreground">Released:</span>
                       <span className="font-medium text-right">
-                        {new Date(windowsRelease.created_at).toLocaleDateString()}
+                        {windowsRelease ? new Date(windowsRelease.created_at).toLocaleDateString() : new Date().toLocaleDateString()}
                       </span>
                     </div>
-                    {windowsRelease.release_notes && (
+                    {windowsRelease?.release_notes && (
                       <div className="mt-4 text-sm bg-muted/50 p-3 rounded-lg border">
                         <p className="font-semibold mb-1 flex items-center gap-1"><Info className="h-3 w-3" /> Release Notes</p>
                         <p className="text-muted-foreground">{windowsRelease.release_notes}</p>
                       </div>
                     )}
                   </>
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center italic py-4">No Windows release available yet.</p>
                 )}
               </div>
               
@@ -148,15 +139,10 @@ function DownloadsPage() {
                 asChild 
                 size="lg" 
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                disabled={!windowsRelease}
               >
-                {windowsRelease ? (
-                  <a href={windowsRelease.file_url} download>
-                    <Download className="mr-2 h-5 w-5" /> Download EXE
-                  </a>
-                ) : (
-                  <span>Coming Soon</span>
-                )}
+                <a href={windowsRelease?.file_url || "/Blue-Horizon-Setup.exe"} download>
+                  <Download className="mr-2 h-5 w-5" /> Download EXE
+                </a>
               </Button>
             </div>
           </Card>
