@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { MapContainer, TileLayer, Marker, Popup, useMap, Tooltip } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMap,
+  Tooltip,
+} from "react-leaflet";
 import type { BusPosition } from "@/lib/tracking";
 
 // Haversine distance in km
@@ -26,7 +33,8 @@ function formatDistance(km: number) {
 // Fix leaflet icons
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  iconRetinaUrl:
+    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
@@ -38,13 +46,14 @@ const schoolIcon = new L.DivIcon({
   iconAnchor: [22, 22],
 });
 
-const getBusIcon = (isHighlighted: boolean) => new L.DivIcon({
-  html: `<div style="position:relative"><div style="position:absolute;inset:-6px;border-radius:9999px;background:${isHighlighted ? "oklch(0.65 0.18 25 / 0.35)" : "oklch(0.62 0.13 235 / 0.35)"};animation:ping 1.6s cubic-bezier(0,0,0.2,1) infinite"></div><div style="position:relative;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:9999px;background:${isHighlighted ? "oklch(0.55 0.2 25)" : "oklch(0.45 0.15 250)"};color:white;font-weight:700;font-size:18px;border:2px solid white;box-shadow:0 6px 16px rgba(0,0,0,0.25)">🚍</div></div>`,
-  className: "custom-leaflet-icon",
-  iconSize: [36, 36],
-  iconAnchor: [18, 18],
-  popupAnchor: [0, -18],
-});
+const getBusIcon = (isHighlighted: boolean) =>
+  new L.DivIcon({
+    html: `<div style="position:relative"><div style="position:absolute;inset:-6px;border-radius:9999px;background:${isHighlighted ? "oklch(0.65 0.18 25 / 0.35)" : "oklch(0.62 0.13 235 / 0.35)"};animation:ping 1.6s cubic-bezier(0,0,0.2,1) infinite"></div><div style="position:relative;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:9999px;background:${isHighlighted ? "oklch(0.55 0.2 25)" : "oklch(0.45 0.15 250)"};color:white;font-weight:700;font-size:18px;border:2px solid white;box-shadow:0 6px 16px rgba(0,0,0,0.25)">🚍</div></div>`,
+    className: "custom-leaflet-icon",
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
+    popupAnchor: [0, -18],
+  });
 
 const userIcon = new L.DivIcon({
   html: '<div style="position:relative"><span style="position:absolute;inset:-8px;border-radius:9999px;background:oklch(0.62 0.18 145 / 0.3);animation:ping 1.6s cubic-bezier(0,0,0.2,1) infinite"></span><div style="position:relative;width:18px;height:18px;border-radius:9999px;background:oklch(0.55 0.2 145);border:3px solid white;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div></div>',
@@ -53,12 +62,20 @@ const userIcon = new L.DivIcon({
   iconAnchor: [9, 9],
 });
 
-function MapController({ userPos, buses, focusedId }: { userPos: [number, number] | null; buses: BusPosition[], focusedId: string | null }) {
+function MapController({
+  userPos,
+  buses,
+  focusedId,
+}: {
+  userPos: [number, number] | null;
+  buses: BusPosition[];
+  focusedId: string | null;
+}) {
   const map = useMap();
-  
+
   useEffect(() => {
     if (focusedId) {
-      const b = buses.find(b => b.id === focusedId);
+      const b = buses.find((b) => b.id === focusedId);
       if (b) {
         map.flyTo([b.lat, b.lng], 16);
       }
@@ -89,14 +106,18 @@ export default function FleetMapClient({
   const [mapRef, setMapRef] = useState<L.Map | null>(null);
 
   const initialCenter = useMemo(() => {
-    if (buses.length === 0) return { lat: 13.0850, lng: 80.2030 };
+    if (buses.length === 0) return { lat: 13.085, lng: 80.203 };
     const lat = buses.reduce((s, b) => s + b.lat, 0) / buses.length;
     const lng = buses.reduce((s, b) => s + b.lng, 0) / buses.length;
     return { lat, lng };
   }, [buses]);
 
   useEffect(() => {
-    if (!showUserLocation || typeof window === "undefined" || !("geolocation" in navigator)) {
+    if (
+      !showUserLocation ||
+      typeof window === "undefined" ||
+      !("geolocation" in navigator)
+    ) {
       return;
     }
     watchIdRef.current = navigator.geolocation.watchPosition(
@@ -108,7 +129,8 @@ export default function FleetMapClient({
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 },
     );
     return () => {
-      if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
+      if (watchIdRef.current !== null)
+        navigator.geolocation.clearWatch(watchIdRef.current);
     };
   }, [showUserLocation]);
 
@@ -124,7 +146,7 @@ export default function FleetMapClient({
   const recenter = () => {
     if (!mapRef) return;
     if (userPos && buses.length) {
-      const bounds = L.latLngBounds(buses.map(b => [b.lat, b.lng]));
+      const bounds = L.latLngBounds(buses.map((b) => [b.lat, b.lng]));
       bounds.extend(userPos);
       mapRef.fitBounds(bounds, { padding: [50, 50] });
     } else if (userPos) {
@@ -143,7 +165,10 @@ export default function FleetMapClient({
   };
 
   return (
-    <div className={`relative ${className ?? "h-full w-full"}`} style={{ minHeight: 320, zIndex: 10 }}>
+    <div
+      className={`relative ${className ?? "h-full w-full"}`}
+      style={{ minHeight: 320, zIndex: 10 }}
+    >
       <MapContainer
         center={[initialCenter.lat, initialCenter.lng]}
         zoom={14}
@@ -152,13 +177,11 @@ export default function FleetMapClient({
         ref={setMapRef}
         attributionControl={false}
       >
-        <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-        />
-        
+        <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
+
         <MapController userPos={userPos} buses={buses} focusedId={focusedId} />
 
-        <Marker position={[13.0850, 80.2030]} icon={schoolIcon}>
+        <Marker position={[13.085, 80.203]} icon={schoolIcon}>
           <Tooltip>Blue Horizon International School</Tooltip>
         </Marker>
 
@@ -171,21 +194,27 @@ export default function FleetMapClient({
         {buses.map((b) => {
           const isHighlighted = b.id === highlightId || b.id === focusedId;
           return (
-            <Marker 
-              key={b.id} 
-              position={[b.lat, b.lng]} 
+            <Marker
+              key={b.id}
+              position={[b.lat, b.lng]}
               icon={getBusIcon(isHighlighted)}
               eventHandlers={{
                 click: () => {
                   setFocusedId(b.id);
                   setActivePopup(b.id);
-                }
+                },
               }}
             >
               <Popup>
-                <div style={{ fontWeight: 600, fontSize: 14, color: "#111" }}>School Bus {b.id}</div>
-                <div style={{ fontSize: 12, color: "#666" }}>{b.route} • Driver: {b.driver}</div>
-                <div style={{ fontSize: 12, marginTop: 4, color: "#111" }}>Status: <span style={{ fontWeight: 500 }}>{b.status}</span></div>
+                <div style={{ fontWeight: 600, fontSize: 14, color: "#111" }}>
+                  School Bus {b.id}
+                </div>
+                <div style={{ fontSize: 12, color: "#666" }}>
+                  {b.route} • Driver: {b.driver}
+                </div>
+                <div style={{ fontSize: 12, marginTop: 4, color: "#111" }}>
+                  Status: <span style={{ fontWeight: 500 }}>{b.status}</span>
+                </div>
                 <div style={{ fontSize: 12, color: "#111" }}>ETA: {b.eta}</div>
               </Popup>
             </Marker>

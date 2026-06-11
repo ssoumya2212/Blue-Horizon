@@ -25,10 +25,15 @@ async function getServerEntry(): Promise<ServerEntry> {
 }
 
 function brandedErrorResponse(e?: unknown): Response {
-  return new Response(renderErrorPage(e ? (e instanceof Error ? e.stack || e.message : String(e)) : ""), {
-    status: 500,
-    headers: { "content-type": "text/html; charset=utf-8" },
-  });
+  return new Response(
+    renderErrorPage(
+      e ? (e instanceof Error ? e.stack || e.message : String(e)) : "",
+    ),
+    {
+      status: 500,
+      headers: { "content-type": "text/html; charset=utf-8" },
+    },
+  );
 }
 
 function isCatastrophicSsrErrorBody(

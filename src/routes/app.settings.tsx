@@ -3,7 +3,16 @@ import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Bell, ShieldCheck, Crosshair, UserCog, User, Lock, LogOut, Loader2 } from "lucide-react";
+import {
+  Bell,
+  ShieldCheck,
+  Crosshair,
+  UserCog,
+  User,
+  Lock,
+  LogOut,
+  Loader2,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import {
@@ -169,9 +178,15 @@ function Settings() {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
-        const { data } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+        const { data } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .single();
         setProfile(data || { email: user.email, role: "User" });
       }
     };
@@ -199,9 +214,10 @@ function Settings() {
   };
 
   const handleChangePassword = async () => {
-    if (newPassword !== confirmPassword) return toast.error("Passwords do not match");
+    if (newPassword !== confirmPassword)
+      return toast.error("Passwords do not match");
     if (newPassword.length < 6) return toast.error("Password too weak");
-    
+
     setIsChangingPwd(true);
     // Verify OTP first
     const { error: otpError } = await verifyEmailOtp(profile?.email, pwdOtp);
@@ -351,12 +367,19 @@ function Settings() {
           </div>
           <div className="p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <p className="font-medium text-lg">{profile?.full_name || "Loading..."}</p>
+              <p className="font-medium text-lg">
+                {profile?.full_name || "Loading..."}
+              </p>
               <p className="text-sm text-muted-foreground">{profile?.email}</p>
-              <p className="text-xs text-muted-foreground capitalize mt-1 border rounded px-2 py-0.5 inline-block bg-muted/30">{profile?.role}</p>
+              <p className="text-xs text-muted-foreground capitalize mt-1 border rounded px-2 py-0.5 inline-block bg-muted/30">
+                {profile?.role}
+              </p>
             </div>
             <div className="flex gap-3">
-              <Button variant="outline" onClick={() => setShowPasswordChange(!showPasswordChange)}>
+              <Button
+                variant="outline"
+                onClick={() => setShowPasswordChange(!showPasswordChange)}
+              >
                 <Lock className="h-4 w-4 mr-2" /> Change Password
               </Button>
               <div className="flex items-center gap-2 border rounded-md px-3 py-1">
@@ -370,23 +393,52 @@ function Settings() {
               <h3 className="font-medium text-sm">Secure Password Change</h3>
               {!otpStep ? (
                 <div className="space-y-3 max-w-sm">
-                  <p className="text-xs text-muted-foreground">We need to verify your email before changing the password.</p>
+                  <p className="text-xs text-muted-foreground">
+                    We need to verify your email before changing the password.
+                  </p>
                   <Button onClick={handleSendPwdOtp} disabled={isChangingPwd}>
-                    {isChangingPwd && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    {isChangingPwd && (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    )}
                     Send Verification OTP
                   </Button>
                 </div>
               ) : (
                 <div className="space-y-3 max-w-sm">
-                  <Input type="text" placeholder="Enter 6-digit OTP" value={pwdOtp} onChange={(e) => setPwdOtp(e.target.value)} maxLength={6} />
-                  <Input type="password" placeholder="New Password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-                  <Input type="password" placeholder="Confirm New Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                  <Input
+                    type="text"
+                    placeholder="Enter 6-digit OTP"
+                    value={pwdOtp}
+                    onChange={(e) => setPwdOtp(e.target.value)}
+                    maxLength={6}
+                  />
+                  <Input
+                    type="password"
+                    placeholder="New Password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                  />
+                  <Input
+                    type="password"
+                    placeholder="Confirm New Password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
                   <div className="flex gap-2">
-                    <Button onClick={handleChangePassword} disabled={isChangingPwd || pwdOtp.length !== 6 || !newPassword}>
-                      {isChangingPwd && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    <Button
+                      onClick={handleChangePassword}
+                      disabled={
+                        isChangingPwd || pwdOtp.length !== 6 || !newPassword
+                      }
+                    >
+                      {isChangingPwd && (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      )}
                       Update Password
                     </Button>
-                    <Button variant="ghost" onClick={() => setOtpStep(false)}>Cancel</Button>
+                    <Button variant="ghost" onClick={() => setOtpStep(false)}>
+                      Cancel
+                    </Button>
                   </div>
                 </div>
               )}

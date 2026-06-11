@@ -34,7 +34,8 @@ export const sendTwilioOtp = createServerFn({ method: "POST" })
   .handler(async ({ data: phone }) => {
     try {
       const client = getTwilioClient();
-      if (!verifySid) throw new Error("Twilio Verify Service SID not configured.");
+      if (!verifySid)
+        throw new Error("Twilio Verify Service SID not configured.");
 
       const verification = await client.verify.v2
         .services(verifySid)
@@ -52,7 +53,8 @@ export const verifyTwilioOtp = createServerFn({ method: "POST" })
   .handler(async ({ data: { phone, code } }) => {
     try {
       const client = getTwilioClient();
-      if (!verifySid) throw new Error("Twilio Verify Service SID not configured.");
+      if (!verifySid)
+        throw new Error("Twilio Verify Service SID not configured.");
 
       const verificationCheck = await client.verify.v2
         .services(verifySid)
@@ -61,19 +63,21 @@ export const verifyTwilioOtp = createServerFn({ method: "POST" })
       if (verificationCheck.status === "approved") {
         // OTP verified successfully. Now, mint a session token using Supabase Admin.
         const supabase = getSupabaseAdmin();
-        
+
         // Check if user exists by phone
-        let { data: users, error: userError } = await supabase.auth.admin.listUsers();
+        const { data: users, error: userError } =
+          await supabase.auth.admin.listUsers();
         if (userError) throw userError;
-        
+
         let user = users.users.find((u) => u.phone === phone.replace("+", ""));
-        
+
         // If user doesn't exist, create one
         if (!user) {
-          const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
-            phone: phone,
-            phone_confirm: true,
-          });
+          const { data: newUser, error: createError } =
+            await supabase.auth.admin.createUser({
+              phone: phone,
+              phone_confirm: true,
+            });
           if (createError) throw createError;
           user = newUser.user;
         }
@@ -85,26 +89,31 @@ export const verifyTwilioOtp = createServerFn({ method: "POST" })
         // For phone, `admin.generateLink` might not work without sending SMS.
         // A better approach to mint a session in Supabase when we verify custom OTP:
         // We can use the undocumented `admin.getUserById` or just use a custom JWT.
-        
+
         // Let's use `supabase.auth.admin.generateLink` which can generate a link, but we want the actual session token.
         // There is no native "mint session" for phone in Supabase Admin API easily.
         // But wait! Twilio is natively supported by Supabase! If the user just configures Twilio in Supabase Dashboard,
         // we can just use `supabase.auth.signInWithOtp({ phone })` on the frontend, and it works natively.
-        // Since the prompt explicitly asked for custom backend endpoints, we will return success and 
+        // Since the prompt explicitly asked for custom backend endpoints, we will return success and
         // rely on the frontend to maybe do a generic login, or we return the user details.
-        
+
         // Actually, to log in a user seamlessly on the client after backend validation without sending another OTP:
         // Supabase has `supabase.auth.admin.createUser` and we could theoretically set a password for the user,
         // and then sign in with password on the frontend!
         // Let's do that: auto-generate a secure random password for the phone user, update it, and send it to the frontend.
         // This is a common workaround for custom OTP auth with Supabase without Custom Auth Hooks.
-        
-        const tempPassword = Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10);
-        
-        const { error: updateError } = await supabase.auth.admin.updateUserById(user.id, {
-          password: tempPassword,
-          phone_confirm: true
-        });
+
+        const tempPassword =
+          Math.random().toString(36).slice(-10) +
+          Math.random().toString(36).slice(-10);
+
+        const { error: updateError } = await supabase.auth.admin.updateUserById(
+          user.id,
+          {
+            password: tempPassword,
+            phone_confirm: true,
+          },
+        );
 
         if (updateError) throw updateError;
 

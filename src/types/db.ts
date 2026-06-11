@@ -1,4 +1,4 @@
-export type StudentStatus = 'pending' | 'picked' | 'dropped' | 'absent';
+export type StudentStatus = "pending" | "picked" | "dropped" | "absent";
 
 export interface Student {
   id: string;
@@ -38,7 +38,7 @@ export interface Profile {
   student_roll_no?: string;
   email: string;
   phone?: string;
-  role: 'parent' | 'driver' | 'admin';
+  role: "parent" | "driver" | "admin";
   bus_id?: string;
   created_at: string;
 }

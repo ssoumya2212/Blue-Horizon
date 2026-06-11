@@ -4,10 +4,13 @@ import L from "leaflet";
 import { MapContainer, TileLayer, Marker, Popup, Tooltip } from "react-leaflet";
 import type { BusRoute } from "@/lib/routes";
 
-const center: [number, number] = [13.0850, 80.2030];
+const center: [number, number] = [13.085, 80.203];
 
 // Generate dummy coordinates around center based on route name
-const getCoordinatesForRoute = (name: string, index: number): [number, number] => {
+const getCoordinatesForRoute = (
+  name: string,
+  index: number,
+): [number, number] => {
   const offsetLat = (index % 3 === 0 ? 1 : -1) * (0.01 * (index + 1));
   const offsetLng = (index % 2 === 0 ? 1 : -1) * (0.015 * (index + 1));
   return [center[0] + offsetLat, center[1] + offsetLng];
@@ -20,15 +23,20 @@ const schoolIcon = new L.DivIcon({
   iconAnchor: [22, 22],
 });
 
-const routeIcon = (index: number) => new L.DivIcon({
-  html: `<div style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#ef4444;color:white;font-weight:bold;border:2px solid white;box-shadow:0 4px 12px rgba(0,0,0,0.3)">${index}</div>`,
-  className: "custom-leaflet-icon",
-  iconSize: [32, 32],
-  iconAnchor: [16, 16],
-  popupAnchor: [0, -16],
-});
+const routeIcon = (index: number) =>
+  new L.DivIcon({
+    html: `<div style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#ef4444;color:white;font-weight:bold;border:2px solid white;box-shadow:0 4px 12px rgba(0,0,0,0.3)">${index}</div>`,
+    className: "custom-leaflet-icon",
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+    popupAnchor: [0, -16],
+  });
 
-export default function RouteMapClient({ filtered = [] }: { filtered?: BusRoute[] }) {
+export default function RouteMapClient({
+  filtered = [],
+}: {
+  filtered?: BusRoute[];
+}) {
   const markers = useMemo(() => {
     return filtered.map((route, index) => ({
       ...route,
@@ -46,19 +54,16 @@ export default function RouteMapClient({ filtered = [] }: { filtered?: BusRoute[
         attributionControl={false}
       >
         <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
-        
+
         <Marker position={center} icon={schoolIcon}>
           <Tooltip>Blue Horizon International School</Tooltip>
         </Marker>
 
         {markers.map((marker, i) => (
-          <Marker
-            key={i}
-            position={marker.position}
-            icon={routeIcon(i + 1)}
-          >
+          <Marker key={i} position={marker.position} icon={routeIcon(i + 1)}>
             <Popup>
-              <strong>{marker.name}</strong><br/>
+              <strong>{marker.name}</strong>
+              <br />
               Driver: {marker.driver}
             </Popup>
           </Marker>

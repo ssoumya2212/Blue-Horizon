@@ -9,13 +9,8 @@ import {
 } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
-import { getPassengers } from "@/services/passengers";
 import { SplashScreen } from "@/components/SplashScreen";
 import { useState, useEffect } from "react";
-
-getPassengers().then((data) => {
-  console.log("SUPABASE DATA:", data);
-});
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -51,10 +46,13 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
           This page didn't load
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          {error?.message || "Something went wrong on our end. You can try refreshing or head back home."}
+          {error?.message ||
+            "Something went wrong on our end. You can try refreshing or head back home."}
         </p>
         <pre className="mt-8 text-red-500 text-left text-xs bg-red-50 p-4 rounded overflow-auto max-w-full">
-          {error ? JSON.stringify(error, Object.getOwnPropertyNames(error), 2) : 'No error object'}
+          {error
+            ? JSON.stringify(error, Object.getOwnPropertyNames(error), 2)
+            : "No error object"}
         </pre>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
@@ -90,11 +88,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { property: "og:title", content: "Blue Horizon" },
         { property: "og:description", content: "School Bus Tracking Platform" },
         { property: "og:type", content: "website" },
-        { property: "og:url", content: "https://blue-horizon.trackmybus.workers.dev" },
-        { property: "og:image", content: "https://blue-horizon.trackmybus.workers.dev/icon-512.png" },
+        {
+          property: "og:url",
+          content: "https://blue-horizon.trackmybus.workers.dev",
+        },
+        {
+          property: "og:image",
+          content: "https://blue-horizon.trackmybus.workers.dev/icon-512.png",
+        },
         { name: "twitter:card", content: "summary_large_image" },
         { name: "twitter:site", content: "@BlueHorizon" },
-        { name: "twitter:image", content: "https://blue-horizon.trackmybus.workers.dev/icon-512.png" },
+        {
+          name: "twitter:image",
+          content: "https://blue-horizon.trackmybus.workers.dev/icon-512.png",
+        },
       ],
       links: [
         {
@@ -170,9 +177,13 @@ function RootComponent() {
     try {
       const { Capacitor } = await import("@capacitor/core");
       if (Capacitor.isNativePlatform()) {
-        const { LocalNotifications } = await import("@capacitor/local-notifications");
+        const { LocalNotifications } =
+          await import("@capacitor/local-notifications");
         await LocalNotifications.requestPermissions();
-      } else if ("Notification" in window && Notification.permission === "default") {
+      } else if (
+        "Notification" in window &&
+        Notification.permission === "default"
+      ) {
         await Notification.requestPermission();
       }
     } catch (err) {
@@ -197,7 +208,8 @@ function RootComponent() {
             </div>
             <h1 className="text-3xl font-bold mb-4">Welcome to Blue Horizon</h1>
             <p className="text-muted-foreground max-w-md mb-8">
-              To keep students safe, this app requires live location tracking and real-time push notifications.
+              To keep students safe, this app requires live location tracking
+              and real-time push notifications.
             </p>
             <div className="space-y-4 mb-8 text-left max-w-sm w-full">
               <div className="flex items-center justify-between gap-3 bg-muted/50 p-4 rounded-xl">
@@ -205,10 +217,22 @@ function RootComponent() {
                   <MapPin className="text-primary h-6 w-6" />
                   <div>
                     <p className="font-medium">Location Access</p>
-                    <p className="text-xs text-muted-foreground">Required for live bus tracking</p>
+                    <p className="text-xs text-muted-foreground">
+                      Required for live bus tracking
+                    </p>
                   </div>
                 </div>
-                <Button variant={locGranted ? "default" : "secondary"} size="sm" onClick={requestLocation} disabled={locGranted} className={locGranted ? "bg-success hover:bg-success text-success-foreground" : ""}>
+                <Button
+                  variant={locGranted ? "default" : "secondary"}
+                  size="sm"
+                  onClick={requestLocation}
+                  disabled={locGranted}
+                  className={
+                    locGranted
+                      ? "bg-success hover:bg-success text-success-foreground"
+                      : ""
+                  }
+                >
                   {locGranted ? "Allowed" : "Allow"}
                 </Button>
               </div>
@@ -217,10 +241,22 @@ function RootComponent() {
                   <Bell className="text-primary h-6 w-6" />
                   <div>
                     <p className="font-medium">Notifications</p>
-                    <p className="text-xs text-muted-foreground">Required for safe drop alerts</p>
+                    <p className="text-xs text-muted-foreground">
+                      Required for safe drop alerts
+                    </p>
                   </div>
                 </div>
-                <Button variant={notifGranted ? "default" : "secondary"} size="sm" onClick={requestNotif} disabled={notifGranted} className={notifGranted ? "bg-success hover:bg-success text-success-foreground" : ""}>
+                <Button
+                  variant={notifGranted ? "default" : "secondary"}
+                  size="sm"
+                  onClick={requestNotif}
+                  disabled={notifGranted}
+                  className={
+                    notifGranted
+                      ? "bg-success hover:bg-success text-success-foreground"
+                      : ""
+                  }
+                >
                   {notifGranted ? "Allowed" : "Allow"}
                 </Button>
               </div>

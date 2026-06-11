@@ -218,3 +218,26 @@ alter publication supabase_realtime add table bus_locations;
 alter publication supabase_realtime add table notifications;
 alter publication supabase_realtime add table user_settings;
 alter publication supabase_realtime add table passengers;
+
+-- ==========================================
+-- ADD SPECIFIC SCHEMAS & WORKFLOW COLUMNS
+-- ==========================================
+
+-- profiles updates
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS parent_name TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS created_by_admin BOOLEAN DEFAULT false;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS password_changed BOOLEAN DEFAULT false;
+
+-- parents updates
+ALTER TABLE public.parents ADD COLUMN IF NOT EXISTS parent_name TEXT;
+ALTER TABLE public.parents ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE public.parents ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE public.parents ADD COLUMN IF NOT EXISTS auth_user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
+
+-- students updates
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS student_name TEXT;
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS roll_number TEXT;
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS assigned_parent_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL;
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS assigned_bus TEXT REFERENCES public.buses(id) ON DELETE SET NULL;
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS assigned_driver TEXT;
+

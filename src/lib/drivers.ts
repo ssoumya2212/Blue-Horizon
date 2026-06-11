@@ -1,70 +1,249 @@
 import { useEffect, useState } from "react";
+import { supabase } from "./supabase";
+import {
+  adminCreateUser,
+  adminUpdateUser,
+  adminDeleteUser,
+  adminDisableUser,
+  adminAddDriver,
+} from "@/server-functions/admin_actions";
+import { toast } from "sonner";
 
-export type DriverStatus = "pending" | "approved" | "rejected";
+export type DriverStatus = "pending" | "approved" | "rejected" | "disabled";
 
 export type Driver = {
+  id: string;
   name: string;
-  route: string;
+  email: string;
   phone: string;
   licence: string;
   status: DriverStatus;
+  route: string;
+  bus_id: string;
 };
 
-let drivers: Driver[] = [
-  {
-    name: "Ravi S.",
-    route: "Route A",
-    phone: "+1 555 233 1180",
-    licence: "DL-1180",
-    status: "approved",
-  },
-  {
-    name: "Sahil K.",
-    route: "Route B",
-    phone: "+1 555 233 1190",
-    licence: "DL-1190",
-    status: "pending",
-  },
-  {
-    name: "Rita J.",
-    route: "Route C",
-    phone: "+1 555 233 1201",
-    licence: "DL-1201",
-    status: "approved",
-  },
-  {
-    name: "Vikas P.",
-    route: "Route D",
-    phone: "+1 555 233 1212",
-    licence: "DL-1212",
-    status: "pending",
-  },
-];
-
+// Internal list to serve as initial value if needed
+let globalDrivers: Driver[] = [];
 const listeners = new Set<(d: Driver[]) => void>();
 
-export function getDrivers() {
-  return drivers;
-}
+export async function fetchDriversList(): Promise<Driver[]> {
+  try {
+    const { data: profiles, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("role", "driver");
 
-export function addDriver(d: Driver) {
-  drivers = [d, ...drivers];
-  listeners.forEach((l) => l(drivers));
-}
+    if (error) throw error;
 
-export function updateDriverStatus(name: string, status: DriverStatus) {
-  drivers = drivers.map((d) => (d.name === name ? { ...d, status } : d));
-  listeners.forEach((l) => l(drivers));
+    const { data: buses } = await supabase.from("buses").select("*");
+
+    const mapped = (profiles || []).map((p) => {
+      // Find a bus assigned to this driver
+      const bus = buses?.find((b) => b.driver_id === p.id || b.id === p.bus_id);
+      return {
+        id: p.id,
+        name: p.full_name,
+        email: p.email,
+        phone: p.phone || "",
+        licence: p.licence || "",
+        status: (p.status || "approved") as DriverStatus,
+        route: bus ? bus.route_name || `Bus ${bus.id} Route` : "Unassigned",
+        bus_id: bus ? bus.id : p.bus_id || "",
+      };
+    });
+
+    globalDrivers = mapped;
+    listeners.forEach((l) => l(globalDrivers));
+    return mapped;
+  } catch (err: any) {
+    console.error("Error fetching drivers:", err);
+    return globalDrivers;
+  }
 }
 
 export function useDrivers() {
-  const [d, setD] = useState(drivers);
+  const [d, setD] = useState<Driver[]>(globalDrivers);
+
   useEffect(() => {
     listeners.add(setD);
-    setD(drivers);
+    fetchDriversList();
+
+    // Subscribe to realtime updates on profiles and buses
+    const channel1 = supabase
+      .channel("realtime_drivers_profiles_lib")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "profiles",
+          filter: "role=eq.driver",
+        },
+        () => {
+          fetchDriversList();
+        },
+      )
+      .subscribe();
+
+    const channel2 = supabase
+      .channel("realtime_drivers_buses_lib")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "buses" },
+        () => {
+          fetchDriversList();
+        },
+      )
+      .subscribe();
+
     return () => {
       listeners.delete(setD);
+      channel1.unsubscribe();
+      channel2.unsubscribe();
     };
   }, []);
+
   return d;
+}
+
+export async function addDriver(data: {
+  name: string;
+  email: string;
+  phone: string;
+  licence: string;
+  bus_id?: string;
+  password?: string;
+  licenseExpiry?: string;
+  experience?: number;
+  address?: string;
+  emergencyContact?: string;
+  routeId?: string;
+}) {
+  const res = await adminAddDriver({
+    fullName: data.name,
+    email: data.email,
+    phone: data.phone,
+    password: data.password || "123456",
+    licenseNumber: data.licence,
+    licenseExpiry: data.licenseExpiry,
+    experience: data.experience,
+    address: data.address,
+    emergencyContact: data.emergencyContact,
+    busId: data.bus_id,
+    routeId: data.routeId,
+  });
+
+  if (!res.success) {
+    toast.error(`Failed to create driver: ${res.error}`);
+    return null;
+  }
+
+  toast.success("Driver created and linked successfully!");
+  fetchDriversList();
+  return res.user;
+}
+
+export async function updateDriver(
+  id: string,
+  data: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    licence?: string;
+    bus_id?: string;
+    status?: DriverStatus;
+  },
+) {
+  const metadata: any = {};
+  if (data.licence !== undefined) metadata.licence = data.licence;
+  if (data.bus_id !== undefined) metadata.bus_id = data.bus_id || null;
+  if (data.status !== undefined) metadata.status = data.status;
+
+  const res = await adminUpdateUser({
+    id,
+    email: data.email,
+    fullName: data.name,
+    phone: data.phone,
+    metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
+  });
+
+  if (!res.success) {
+    toast.error(`Failed to update driver: ${res.error}`);
+    return false;
+  }
+
+  // Handle bus assignment logic
+  if (data.bus_id !== undefined) {
+    // 1. Unassign from previous buses
+    await supabase
+      .from("buses")
+      .update({ driver_id: null, driver_name: "Unassigned" })
+      .eq("driver_id", id);
+
+    // 2. Assign to new bus
+    if (data.bus_id) {
+      await supabase
+        .from("buses")
+        .update({ driver_id: id, driver_name: data.name || "Driver" })
+        .eq("id", data.bus_id);
+    }
+  } else if (data.name) {
+    // If name changed, update the buses table where this driver is assigned
+    await supabase
+      .from("buses")
+      .update({ driver_name: data.name })
+      .eq("driver_id", id);
+  }
+
+  toast.success("Driver updated successfully!");
+  fetchDriversList();
+  return true;
+}
+
+export async function updateDriverStatus(id: string, status: DriverStatus) {
+  let res;
+  if (status === "disabled") {
+    res = await adminDisableUser({ id, disable: true });
+  } else {
+    // If enabling a previously disabled driver
+    const { data: p } = await supabase
+      .from("profiles")
+      .select("status")
+      .eq("id", id)
+      .single();
+    if (p?.status === "disabled") {
+      await adminDisableUser({ id, disable: false });
+    }
+    res = await adminUpdateUser({
+      id,
+      metadata: { status },
+    });
+  }
+
+  if (res && !res.success) {
+    toast.error(`Failed to update driver status: ${res.error}`);
+    return false;
+  }
+
+  toast.success(`Driver status updated to ${status}`);
+  fetchDriversList();
+  return true;
+}
+
+export async function deleteDriver(id: string) {
+  // 1. Unassign from any buses
+  await supabase
+    .from("buses")
+    .update({ driver_id: null, driver_name: "Unassigned" })
+    .eq("driver_id", id);
+
+  const res = await adminDeleteUser({ id });
+  if (!res.success) {
+    toast.error(`Failed to delete driver: ${res.error}`);
+    return false;
+  }
+
+  toast.success("Driver deleted successfully");
+  fetchDriversList();
+  return true;
 }

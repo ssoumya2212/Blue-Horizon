@@ -1,4 +1,9 @@
-import { createFileRoute, Outlet, redirect, Navigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Outlet,
+  redirect,
+  Navigate,
+} from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";

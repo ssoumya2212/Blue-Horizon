@@ -48,7 +48,7 @@ export const getCurrentUser = async () => {
 // SEND OTP (Using Twilio)
 export const sendOtp = async (phone: string) => {
   const res = await sendTwilioOtp({ data: phone });
-  
+
   if (!res.success) {
     return { error: res.error || "Failed to send OTP", data: null };
   }
@@ -62,7 +62,7 @@ export const verifyOtp = async (phone: string, token: string) => {
   if (!res.success || !res.tempPassword) {
     return { error: res.error || "Invalid OTP code", data: null };
   }
-  
+
   // Actually sign in the user on the client using the generated password
   const { data, error } = await supabase.auth.signInWithPassword({
     phone: res.phone,
@@ -104,7 +104,7 @@ export const verifyEmailOtp = async (email: string, token: string) => {
 // UPDATE PASSWORD
 export const updatePassword = async (password: string) => {
   const { data, error } = await supabase.auth.updateUser({
-    password: password
+    password: password,
   });
 
   if (error) {

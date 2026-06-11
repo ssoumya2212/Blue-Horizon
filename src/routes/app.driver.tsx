@@ -50,17 +50,101 @@ export const Route = createFileRoute("/app/driver")({
   component: DriverDashboard,
 });
 
-import type { Student, StudentStatus } from "@/lib/db";
-
-// Remove static initial array
+import type { Student, StudentStatus } from "@/types/db";
 
 function DriverDashboard() {
+  const [driverProfile, setDriverProfile] = useState<any>(null);
+  const [assignedBus, setAssignedBus] = useState<any>(null);
+  const [assignedRoute, setAssignedRoute] = useState<any>(null);
+  const [loadingData, setLoadingData] = useState(true);
+
   const [isGpsActive, setIsGpsActive] = useState(false);
   const [isSosCooldown, setIsSosCooldown] = useState(false);
   const [isSosModalOpen, setIsSosModalOpen] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
 
+  const [activeTrip, setActiveTrip] = useState<any>(null);
+
+  const [students, setStudents] = useState<Student[]>([]);
+  const [q, setQ] = useState("");
+  const [reportText, setReportText] = useState("");
+  const reports = useReports();
+
+  // Load Driver Profile & Assigned Bus/Route
+  const loadDriverData = async () => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      if (profile) {
+        setDriverProfile(profile);
+
+        // Try to find the bus this driver is assigned to
+        const { data: busData } = await supabase
+          .from("buses")
+          .select("*")
+          .eq("driver_id", user.id)
+          .limit(1);
+
+        let myBus = busData && busData.length > 0 ? busData[0] : null;
+
+        if (!myBus && profile.bus_id) {
+          // Fallback to profile bus_id
+          const { data: busData2 } = await supabase
+            .from("buses")
+            .select("*")
+            .eq("id", profile.bus_id)
+            .single();
+          myBus = busData2;
+        }
+
+        if (myBus) {
+          setAssignedBus(myBus);
+
+          if (myBus.route_id) {
+            const { data: routeData } = await supabase
+              .from("routes")
+              .select("*")
+              .eq("id", myBus.route_id)
+              .single();
+            if (routeData) setAssignedRoute(routeData);
+          }
+
+          // Fetch active trip if exists
+          const { data: activeTrips } = await supabase
+            .from("trips")
+            .select("*")
+            .eq("bus_id", myBus.id)
+            .eq("status", "active")
+            .limit(1);
+          if (activeTrips && activeTrips.length > 0) {
+            setActiveTrip(activeTrips[0]);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error loading driver dashboard data:", err);
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
   useEffect(() => {
+    loadDriverData();
+  }, []);
+
+  // Watch GPS Position (Only when assignedBus is loaded)
+  useEffect(() => {
+    if (!assignedBus?.id) return;
+
     let watchId: string | undefined;
 
     const startTracking = async () => {
@@ -82,11 +166,20 @@ function DriverDashboard() {
               setIsGpsActive(true);
 
               await supabase.from("bus_locations").upsert({
-                bus_id: "007",
+                bus_id: assignedBus.id,
                 latitude: lat,
                 longitude: lng,
                 updated_at: new Date().toISOString(),
               });
+
+              if (activeTrip) {
+                await supabase.from("tracking_history").insert({
+                  bus_id: assignedBus.id,
+                  latitude: lat,
+                  longitude: lng,
+                  created_at: new Date().toISOString(),
+                });
+              }
             }
           },
         );
@@ -99,70 +192,166 @@ function DriverDashboard() {
 
     return () => {
       if (watchId) {
-        import("@capacitor/geolocation").then(({ Geolocation }) => {
-          Geolocation.clearWatch({ id: watchId as string }).catch(() => {});
-        }).catch(() => {});
+        import("@capacitor/geolocation")
+          .then(({ Geolocation }) => {
+            Geolocation.clearWatch({ id: watchId as string }).catch(() => {});
+          })
+          .catch(() => {});
       }
     };
-  }, []);
-  const [students, setStudents] = useState<Student[]>([]);
-  const [q, setQ] = useState("");
-  const [reportText, setReportText] = useState("");
-  const reports = useReports();
-  
+  }, [assignedBus?.id, activeTrip?.id]);
+
+  // Load and Subscribe to Students for this Bus
   useEffect(() => {
+    if (!assignedBus?.id) return;
+
     const fetchStudents = async () => {
       const { data } = await supabase
         .from("students")
         .select("*")
-        .eq("bus_id", "007")
+        .eq("bus_id", assignedBus.id)
         .order("name");
       if (data) setStudents(data);
     };
+
     fetchStudents();
 
     const channel = supabase
-      .channel("driver_students")
+      .channel("driver_students_realtime")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "students", filter: "bus_id=eq.007" },
+        {
+          event: "*",
+          schema: "public",
+          table: "students",
+          filter: `bus_id=eq.${assignedBus.id}`,
+        },
         (payload) => {
           if (payload.eventType === "UPDATE") {
             setStudents((prev) =>
-              prev.map((s) => (s.id === payload.new.id ? (payload.new as Student) : s))
+              prev.map((s) =>
+                s.id === payload.new.id ? (payload.new as Student) : s,
+              ),
             );
           } else if (payload.eventType === "INSERT") {
             setStudents((prev) => [...prev, payload.new as Student]);
+          } else if (payload.eventType === "DELETE") {
+            setStudents((prev) => prev.filter((s) => s.id !== payload.old.id));
           }
-        }
+        },
       )
       .subscribe();
-      
-    return () => { channel.unsubscribe(); };
-  }, []);
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [assignedBus?.id]);
 
   const onboardCount = students.filter((s) => s.status === "picked").length;
   const filtered = students.filter((s) =>
-    s.name.toLowerCase().includes(q.toLowerCase())
+    s.name.toLowerCase().includes(q.toLowerCase()),
   );
 
+  const handleStartTrip = async () => {
+    if (!assignedBus?.id) {
+      toast.error("No bus assigned. Cannot start trip.");
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from("trips")
+        .insert({
+          bus_id: assignedBus.id,
+          status: "active",
+          started_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await supabase
+        .from("buses")
+        .update({ status: "Running", last_updated: new Date().toISOString() })
+        .eq("id", assignedBus.id);
+
+      await supabase
+        .from("students")
+        .update({ status: "pending", last_updated: new Date().toISOString() })
+        .eq("bus_id", assignedBus.id);
+
+      setActiveTrip(data);
+      setAssignedBus((prev: any) => ({ ...prev, status: "Running" }));
+      toast.success("Trip started! Students status reset to pending.");
+    } catch (err: any) {
+      console.error("Error starting trip:", err);
+      toast.error(err.message || "Failed to start trip.");
+    }
+  };
+
+  const handleEndTrip = async () => {
+    if (!activeTrip) return;
+    try {
+      const { error } = await supabase
+        .from("trips")
+        .update({
+          status: "completed",
+          ended_at: new Date().toISOString(),
+        })
+        .eq("id", activeTrip.id);
+
+      if (error) throw error;
+
+      await supabase
+        .from("buses")
+        .update({ status: "Active", last_updated: new Date().toISOString() })
+        .eq("id", assignedBus.id);
+
+      setActiveTrip(null);
+      setAssignedBus((prev: any) => ({ ...prev, status: "Active" }));
+      toast.success("Trip completed successfully!");
+    } catch (err: any) {
+      console.error("Error ending trip:", err);
+      toast.error(err.message || "Failed to end trip.");
+    }
+  };
+
   const markPresent = async (student: Student) => {
-    setStudents(prev => prev.map(s => s.id === student.id ? { ...s, status: "picked" } : s));
-    supabase.from("students").update({ status: "picked", last_updated: new Date().toISOString() }).eq("id", student.id).then();
+    setStudents((prev) =>
+      prev.map((s) => (s.id === student.id ? { ...s, status: "picked" } : s)),
+    );
+    await supabase
+      .from("students")
+      .update({ status: "picked", last_updated: new Date().toISOString() })
+      .eq("id", student.id);
+
+    await supabase.from("pickup_logs").insert({
+      student_id: student.id,
+      bus_id: assignedBus?.id || "007",
+      location_name: student.pickup_address || "School Bus stop",
+      created_at: new Date().toISOString(),
+    });
+
     toast.success(`${student.name} marked present!`);
   };
 
   const markAbsent = async (student: Student) => {
-    setStudents(prev => prev.map(s => s.id === student.id ? { ...s, status: "absent" } : s));
-    supabase.from("students").update({ status: "absent", last_updated: new Date().toISOString() }).eq("id", student.id).then();
+    setStudents((prev) =>
+      prev.map((s) => (s.id === student.id ? { ...s, status: "absent" } : s)),
+    );
+    await supabase
+      .from("students")
+      .update({ status: "absent", last_updated: new Date().toISOString() })
+      .eq("id", student.id);
     toast.info(`${student.name} marked absent.`);
   };
 
   const markDropped = async (student: Student) => {
     if (student.status === "dropped") return;
-    
-    // Update local state first for immediate UI feedback
-    setStudents(prev => prev.map(s => s.id === student.id ? { ...s, status: "dropped" } : s));
+
+    setStudents((prev) =>
+      prev.map((s) => (s.id === student.id ? { ...s, status: "dropped" } : s)),
+    );
 
     try {
       if (!navigator.onLine) {
@@ -171,10 +360,10 @@ function DriverDashboard() {
           student_id: student.id,
           drop_log: {
             student_id: student.id,
-            bus_id: "007",
+            bus_id: assignedBus?.id || "007",
             status: "dropped",
-            location_name: student.drop_address
-          }
+            location_name: student.drop_address,
+          },
         });
         toast.warning(`Offline: ${student.name} drop queued for sync`);
       } else {
@@ -185,9 +374,9 @@ function DriverDashboard() {
 
         await supabase.from("drop_logs").insert({
           student_id: student.id,
-          bus_id: "007",
+          bus_id: assignedBus?.id || "007",
           status: "dropped",
-          location_name: student.drop_address
+          location_name: student.drop_address,
         });
       }
     } catch (e) {
@@ -195,48 +384,44 @@ function DriverDashboard() {
       toast.error("Failed to drop student");
     }
 
-    // 3. Send Notification to Parent
     addNotification(
       "Safe Drop-off 🚸",
       `Your child ${student.name} has been safely dropped at ${student.drop_address}.`,
       "attendance",
-      "parent"
+      "parent",
     );
-    
+
     toast.success(`${student.name} marked as dropped!`);
   };
 
   const handleScan = (decodedText: string) => {
     setIsScannerOpen(false);
-    
-    // Try to find student by ID or Roll No
-    const student = students.find(s => s.id.toString() === decodedText || s.student_roll_no === decodedText);
-    
+
+    const student = students.find(
+      (s) =>
+        s.id.toString() === decodedText || s.student_roll_no === decodedText,
+    );
+
     if (student) {
       if (student.status === "dropped") {
         toast.info(`${student.name} is already dropped off.`);
       } else if (student.status === "picked") {
         markDropped(student);
       } else {
-        // Mark picked
-        setStudents(prev => prev.map(s => s.id === student.id ? { ...s, status: "picked" } : s));
-        supabase.from("students").update({ status: "picked" }).eq("id", student.id).then();
-        toast.success(`${student.name} marked as picked up!`);
+        markPresent(student);
       }
     } else {
       toast.error("Student not found in this bus.");
     }
   };
 
-  // We removed html5-qrcode completely to prevent SSR and hook crashes.
-  // Instead, the scanning will be simulated using a simple input below.
-
   const submitReport = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!reportText.trim()) return;
-    addReport(reportText.trim(), "Driver Ravi");
+    const authorName = driverProfile?.full_name || "Driver";
+    addReport(reportText.trim(), authorName);
     await addNotification(
-      "Report from Driver Ravi",
+      `Report from Driver ${authorName}`,
       reportText.trim(),
       "bus_delay",
       "parent",
@@ -247,10 +432,11 @@ function DriverDashboard() {
 
   const handleSOS = async () => {
     if (isSosCooldown) return;
+    const busNum = assignedBus?.id || "007";
 
     await addNotification(
       "🚨 Emergency Alert",
-      "Bus 007 has triggered an emergency alert.",
+      `Bus ${busNum} has triggered an emergency alert.`,
       "emergency",
       "all",
     );
@@ -264,27 +450,61 @@ function DriverDashboard() {
     setTimeout(() => setIsSosCooldown(false), 60000);
   };
 
+  if (loadingData) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <p className="text-muted-foreground animate-pulse">
+          Loading driver dashboard details...
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold md:text-3xl">Welcome, Ravi</h1>
+          <h1 className="text-2xl font-bold md:text-3xl">
+            Welcome, {driverProfile?.full_name || "Driver"}
+          </h1>
           <p className="text-sm text-muted-foreground">
-            Mark today's attendance for Route A.
+            Mark today's attendance for Route{" "}
+            {assignedRoute?.name || "Unassigned"}.
           </p>
         </div>
         <div className="relative flex items-center gap-2">
-          {isGpsActive &&              <Badge
+          {activeTrip ? (
+            <Button
+              variant="destructive"
+              onClick={handleEndTrip}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold shadow-md animate-in fade-in zoom-in-95 duration-200"
+            >
+              🛑 End Trip
+            </Button>
+          ) : (
+            <Button
+              onClick={handleStartTrip}
+              className="bg-success hover:bg-success/90 text-success-foreground font-bold shadow-md animate-in fade-in zoom-in-95 duration-200"
+            >
+              🏁 Start Trip
+            </Button>
+          )}
+
+          {isGpsActive && (
+            <Badge
               variant="outline"
               className="border-success/50 text-success bg-success/10 py-1.5 hidden sm:flex items-center gap-1"
             >
               <MapPin className="h-3 w-3" /> Live GPS Active
             </Badge>
-          }
+          )}
 
           <Dialog open={isScannerOpen} onOpenChange={setIsScannerOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="border-primary bg-primary text-primary-foreground hover:bg-primary/90 hidden sm:flex">
+              <Button
+                variant="outline"
+                className="border-primary bg-primary text-primary-foreground hover:bg-primary/90 hidden sm:flex"
+              >
                 <Search className="mr-2 h-4 w-4" /> Scan ID
               </Button>
             </DialogTrigger>
@@ -292,15 +512,23 @@ function DriverDashboard() {
               <DialogHeader>
                 <DialogTitle>Scan Student E-Pass</DialogTitle>
                 <DialogDescription className="text-center">
-                  Align the QR code within the frame to automatically check in or drop off the student.
+                  Align the QR code within the frame to automatically check in
+                  or drop off the student.
                 </DialogDescription>
               </DialogHeader>
               <div className="w-full flex flex-col gap-4 mt-2">
-                <p className="text-sm text-muted-foreground text-center">Camera scanning disabled in demo. Enter student Roll No manually:</p>
-                <form 
+                <p className="text-sm text-muted-foreground text-center">
+                  Camera scanning disabled in demo. Enter student Roll No
+                  manually:
+                </p>
+                <form
                   onSubmit={(e) => {
                     e.preventDefault();
-                    const val = (e.currentTarget.elements.namedItem("scanInput") as HTMLInputElement).value;
+                    const val = (
+                      e.currentTarget.elements.namedItem(
+                        "scanInput",
+                      ) as HTMLInputElement
+                    ).value;
                     if (val) handleScan(val);
                   }}
                   className="flex gap-2"
@@ -362,7 +590,7 @@ function DriverDashboard() {
                 onClick={() => {
                   addNotification(
                     "Bus Delayed",
-                    "Bus 007 is experiencing a slight delay.",
+                    `Bus ${assignedBus?.id || "007"} is experiencing a slight delay.`,
                     "delay",
                     "parent",
                   );
@@ -375,7 +603,7 @@ function DriverDashboard() {
                 onClick={() => {
                   addNotification(
                     "Route Changed",
-                    "Bus 007 is taking an alternate route.",
+                    `Bus ${assignedBus?.id || "007"} is taking an alternate route.`,
                     "route_update",
                     "parent",
                   );
@@ -388,7 +616,7 @@ function DriverDashboard() {
                 onClick={() => {
                   addNotification(
                     "Bus Arriving Soon",
-                    "Bus 007 arriving in 5 minutes 🚍",
+                    `Bus ${assignedBus?.id || "007"} arriving in 5 minutes 🚍`,
                     "bus_arrival",
                     "parent",
                   );
@@ -411,12 +639,10 @@ function DriverDashboard() {
         </div>
       </div>
 
-
-
       <div className="grid gap-4 sm:grid-cols-3">
         {[
-          { label: "BUS NO", value: "007" },
-          { label: "ROUTE", value: "OMR Express" },
+          { label: "BUS NO", value: assignedBus?.id || "—" },
+          { label: "ROUTE", value: assignedRoute?.name || "Unassigned" },
           { label: "ONBOARD", value: onboardCount },
         ].map((s, i) => (
           <Card
@@ -455,82 +681,105 @@ function DriverDashboard() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((s, i) => (
-              <TableRow key={s.id}>
-                <TableCell className="text-muted-foreground">{i + 1}</TableCell>
-                <TableCell className="font-medium">{s.name}</TableCell>
-                <TableCell className="text-muted-foreground">{s.student_roll_no || "N/A"}</TableCell>
-                <TableCell className="text-muted-foreground">
-                  {s.drop_address}
+            {filtered.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={6}
+                  className="text-center py-8 text-muted-foreground"
+                >
+                  No students assigned or matching the search.
                 </TableCell>
-                <TableCell>
-                  {s.status === "dropped" ? (
-                    <Badge className="bg-success text-success-foreground">
-                      Dropped
-                    </Badge>
-                  ) : s.status === "picked" ? (
-                    <Badge className="bg-primary text-primary-foreground">
-                      Present
-                    </Badge>
-                  ) : s.status === "absent" ? (
-                    <Badge variant="destructive">
-                      Absent
-                    </Badge>
-                  ) : (
-                    <Badge
-                      variant="outline"
-                      className="border-warning/50 text-warning"
-                    >
-                      Pending
-                    </Badge>
-                  )}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      asChild
-                      className="text-primary hover:bg-primary/10 transition-colors h-8 w-8 hidden sm:flex"
-                    >
-                      <a href={`tel:+91987654321${i}`}>
-                        <Phone className="h-4 w-4" />
-                      </a>
-                    </Button>
-                    {s.status === "pending" && (
-                      <>
+              </TableRow>
+            ) : (
+              filtered.map((s, i) => (
+                <TableRow key={s.id}>
+                  <TableCell className="text-muted-foreground">
+                    {i + 1}
+                  </TableCell>
+                  <TableCell className="font-medium">{s.name}</TableCell>
+                  <TableCell className="text-muted-foreground font-mono">
+                    {s.student_roll_no || "N/A"}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {s.drop_address || s.pickup_address}
+                  </TableCell>
+                  <TableCell>
+                    {s.status === "dropped" ? (
+                      <Badge className="bg-success text-success-foreground">
+                        Dropped
+                      </Badge>
+                    ) : s.status === "picked" ? (
+                      <Badge className="bg-primary text-primary-foreground">
+                        Present
+                      </Badge>
+                    ) : s.status === "absent" ? (
+                      <Badge variant="destructive">Absent</Badge>
+                    ) : (
+                      <Badge
+                        variant="outline"
+                        className="border-warning/50 text-warning"
+                      >
+                        Pending
+                      </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end items-center gap-2">
+                      {s.parent_phone && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          asChild
+                          className="text-primary hover:bg-primary/10 transition-colors h-8 w-8 hidden sm:flex"
+                        >
+                          <a href={`tel:${s.parent_phone}`}>
+                            <Phone className="h-4 w-4" />
+                          </a>
+                        </Button>
+                      )}
+                      {s.status === "pending" && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-destructive border-destructive/50 hover:bg-destructive/10"
+                            onClick={() => markAbsent(s)}
+                          >
+                            Absent
+                          </Button>
+                          <Button size="sm" onClick={() => markPresent(s)}>
+                            Present
+                          </Button>
+                        </>
+                      )}
+                      {s.status === "absent" && (
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-destructive border-destructive/50 hover:bg-destructive/10"
-                          onClick={() => markAbsent(s)}
+                          onClick={() => markPresent(s)}
                         >
-                          Absent
+                          Mark Present
                         </Button>
-                        <Button size="sm" onClick={() => markPresent(s)}>
-                          Present
+                      )}
+                      {s.status === "picked" && (
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={() => markDropped(s)}
+                        >
+                          Drop Off
                         </Button>
-                      </>
-                    )}
-                    {s.status === "absent" && (
-                      <Button size="sm" variant="outline" onClick={() => markPresent(s)}>
-                        Mark Present
-                      </Button>
-                    )}
-                    {s.status === "picked" && (
-                      <Button size="sm" variant="default" onClick={() => markDropped(s)}>
-                        Drop Off
-                      </Button>
-                    )}
-                    {s.status === "dropped" && (
-                      <Button size="sm" variant="outline" disabled>
-                        Dropped
-                      </Button>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+                      )}
+                      {s.status === "dropped" && (
+                        <Button size="sm" variant="outline" disabled>
+                          Dropped
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </Card>

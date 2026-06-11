@@ -7,21 +7,25 @@ export type Session = { username: string; role: Role; id: string } | null;
 export async function getSession(): Promise<Session> {
   if (typeof window === "undefined") return null;
   try {
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (!session) return null;
-    
+
     const { data: profile } = await supabase
       .from("profiles")
       .select("role, full_name")
       .eq("id", session.user.id)
       .single();
-      
-    const fallbackRole = typeof window !== "undefined" ? localStorage.getItem("bh_role") || "parent" : "parent";
-    
+
     return {
       id: session.user.id,
-      username: profile?.full_name || session.user?.user_metadata?.full_name || session.user?.email || "User",
-      role: fallbackRole as Role
+      username:
+        profile?.full_name ||
+        session.user?.user_metadata?.full_name ||
+        session.user?.email ||
+        "User",
+      role: (profile?.role || "parent") as Role,
     };
   } catch (err) {
     console.error("Auth error:", err);
@@ -30,9 +34,6 @@ export async function getSession(): Promise<Session> {
 }
 
 export async function signOut() {
-  if (typeof window !== "undefined") {
-    localStorage.removeItem("bh_role");
-  }
   await supabase.auth.signOut({ scope: "global" });
 }
 

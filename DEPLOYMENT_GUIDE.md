@@ -7,6 +7,7 @@ This document provides instructions for deploying the Web App, and building the 
 The web application is built using React, Vite, and TanStack Router, and is configured for deployment on Vercel.
 
 ### Deployment Steps
+
 1. Push your code to GitHub.
 2. In the Vercel dashboard, click **Add New** -> **Project**.
 3. Import your Blue Horizon repository.
@@ -15,6 +16,7 @@ The web application is built using React, Vite, and TanStack Router, and is conf
 6. Click **Deploy**.
 
 **Commands Used Automatically by Vercel:**
+
 - Build Command: `npm run build`
 - Output Directory: `dist/client`
 
@@ -25,6 +27,7 @@ The web application is built using React, Vite, and TanStack Router, and is conf
 The mobile application is wrapped using Ionic Capacitor. This allows you to generate native Android `.apk` and `.aab` (Android App Bundle) files using your existing web codebase.
 
 ### Prerequisites
+
 - Android Studio installed.
 - Java Development Kit (JDK 17+) installed.
 - Android SDK installed and configured.
@@ -33,36 +36,41 @@ The mobile application is wrapped using Ionic Capacitor. This allows you to gene
 
 1. **Install Dependencies:**
    Ensure all dependencies are installed.
+
    ```bash
    npm install
    ```
 
 2. **Sync Web Assets to Capacitor:**
    This copies your compiled web app into the Android folder.
+
    ```bash
    npm run android:sync
    ```
 
 3. **Open in Android Studio (Optional):**
    If you want to manually run the app on an emulator.
+
    ```bash
    npx cap open android
    ```
 
 4. **Generate APK (Debug/Testing):**
    This command builds the `.apk` file for testing.
+
    ```bash
    npm run android:apk
    ```
-   *Output Location:* `android/app/build/outputs/apk/debug/app-debug.apk`
+
+   _Output Location:_ `android/app/build/outputs/apk/debug/app-debug.apk`
 
 5. **Generate AAB (Play Store Release):**
    This command builds the signed Android App Bundle required by the Google Play Store.
    ```bash
    npm run android:aab
    ```
-   *Output Location:* `android/app/build/outputs/bundle/release/app-release.aab`
-   *(Note: You will need to configure your signing keystore in `android/app/build.gradle` for a signed release).*
+   _Output Location:_ `android/app/build/outputs/bundle/release/app-release.aab`
+   _(Note: You will need to configure your signing keystore in `android/app/build.gradle` for a signed release)._
 
 ---
 
@@ -71,12 +79,14 @@ The mobile application is wrapped using Ionic Capacitor. This allows you to gene
 The desktop application uses Electron to provide a native Windows executable (`.exe`) installer.
 
 ### Prerequisites
+
 - Node.js installed on a Windows machine.
 
 ### Build Steps
 
 1. **Test Electron Locally (Dev Mode):**
    To test the Electron wrapper locally before compiling.
+
    ```bash
    npm run electron:dev
    ```
@@ -86,7 +96,7 @@ The desktop application uses Electron to provide a native Windows executable (`.
    ```bash
    npm run electron:build
    ```
-   *Output Location:* Check the generated `release` folder in your project root. You will find the `Blue Horizon Setup x.x.x.exe` installer inside.
+   _Output Location:_ Check the generated `release` folder in your project root. You will find the `Blue Horizon Setup x.x.x.exe` installer inside.
 
 ---
 

@@ -50,7 +50,9 @@ export function useSettings() {
     try {
       if (typeof window !== "undefined") {
         const stored = localStorage.getItem("bh_user_settings");
-        return stored ? { ...defaultSettings, ...JSON.parse(stored) } : defaultSettings;
+        return stored
+          ? { ...defaultSettings, ...JSON.parse(stored) }
+          : defaultSettings;
       }
       return defaultSettings;
     } catch (e) {
@@ -62,7 +64,9 @@ export function useSettings() {
 
   useEffect(() => {
     const loadDbSettings = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) return;
       setUserId(session.user.id);
 
@@ -88,13 +92,18 @@ export function useSettings() {
     setSettings((prev) => {
       const updated = { ...prev, [key]: value };
       localStorage.setItem("bh_user_settings", JSON.stringify(updated));
-      
+
       if (userId) {
-        supabase.from("user_settings")
-          .upsert({ user_id: userId, settings: updated, updated_at: new Date().toISOString() })
+        supabase
+          .from("user_settings")
+          .upsert({
+            user_id: userId,
+            settings: updated,
+            updated_at: new Date().toISOString(),
+          })
           .then();
       }
-      
+
       return updated;
     });
   };

@@ -18,17 +18,23 @@ function emit() {
   listeners.forEach((l) => l([...positions]));
 }
 
-function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+function getDistanceFromLatLonInKm(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+) {
   const R = 6371; // Radius of the earth in km
-  const dLat = (lat2 - lat1) * (Math.PI / 180);  
-  const dLon = (lon2 - lon1) * (Math.PI / 180); 
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2)
-    ; 
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-  return R * c; 
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) *
+      Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }
 
 const notifiedBuses = new Set<string>();
@@ -37,27 +43,32 @@ async function startSupabaseTracking() {
   // First, fetch the buses to get route and driver info
   const { data: buses } = await supabase.from("buses").select("*");
   if (!buses) return;
-  
+
   // Then fetch current locations
   const { data: locations } = await supabase.from("bus_locations").select("*");
-  
+
   const newPositions: BusPosition[] = [];
-  
+
   for (const bus of buses) {
-    const loc = locations?.find(l => l.bus_id === bus.id);
+    const loc = locations?.find((l) => l.bus_id === bus.id);
     if (loc) {
       newPositions.push({
         id: bus.id,
         route: bus.route_name || "Unknown Route",
         driver: bus.driver_name || "Unknown Driver",
-        status: bus.status === "Running" ? "Running" : (bus.status === "Delayed" ? "Delayed" : "Idle"),
+        status:
+          bus.status === "Running"
+            ? "Running"
+            : bus.status === "Delayed"
+              ? "Delayed"
+              : "Idle",
         eta: bus.next_stop || "—",
         lat: Number(loc.latitude),
-        lng: Number(loc.longitude)
+        lng: Number(loc.longitude),
       });
     }
   }
-  
+
   positions = newPositions;
   emit();
 
@@ -70,14 +81,23 @@ async function startSupabaseTracking() {
       async (payload) => {
         const newLoc = payload.new as any;
         if (newLoc && newLoc.bus_id) {
-          
           // Geofence check (1km from Blue Horizon Int. School: 13.0850, 80.2030)
-          const dist = getDistanceFromLatLonInKm(Number(newLoc.latitude), Number(newLoc.longitude), 13.0850, 80.2030);
+          const dist = getDistanceFromLatLonInKm(
+            Number(newLoc.latitude),
+            Number(newLoc.longitude),
+            13.085,
+            80.203,
+          );
           if (dist < 1.0 && !notifiedBuses.has(newLoc.bus_id)) {
             notifiedBuses.add(newLoc.bus_id);
             // Send push notification to parents
             const { addNotification } = await import("@/lib/notifications");
-            addNotification("Bus Arriving Soon", `Bus ${newLoc.bus_id} is within 1km of the stop!`, "bus_arrival", "parent");
+            addNotification(
+              "Bus Arriving Soon",
+              `Bus ${newLoc.bus_id} is within 1km of the stop!`,
+              "bus_arrival",
+              "parent",
+            );
           }
 
           const idx = positions.findIndex((p) => p.id === newLoc.bus_id);
@@ -90,16 +110,25 @@ async function startSupabaseTracking() {
             emit();
           } else {
             // New bus location appeared, fetch bus details
-            const { data: bus } = await supabase.from("buses").select("*").eq("id", newLoc.bus_id).single();
+            const { data: bus } = await supabase
+              .from("buses")
+              .select("*")
+              .eq("id", newLoc.bus_id)
+              .single();
             if (bus) {
               positions.push({
                 id: bus.id,
                 route: bus.route_name || "Unknown Route",
                 driver: bus.driver_name || "Unknown Driver",
-                status: bus.status === "Running" ? "Running" : (bus.status === "Delayed" ? "Delayed" : "Idle"),
+                status:
+                  bus.status === "Running"
+                    ? "Running"
+                    : bus.status === "Delayed"
+                      ? "Delayed"
+                      : "Idle",
                 eta: bus.next_stop || "—",
                 lat: Number(newLoc.latitude),
-                lng: Number(newLoc.longitude)
+                lng: Number(newLoc.longitude),
               });
               emit();
             }

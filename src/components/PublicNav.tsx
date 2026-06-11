@@ -14,7 +14,7 @@ const allLinks = [
   { to: "/downloads", label: "Downloads" },
 ];
 
-const links = allLinks.filter(l => !(isNative() && l.to === "/downloads"));
+const links = allLinks.filter((l) => !(isNative() && l.to === "/downloads"));
 
 export function PublicNav() {
   const [open, setOpen] = useState(false);

@@ -50,37 +50,6 @@ export const Route = createFileRoute("/app/admin")({
   component: AdminDashboard,
 });
 
-const stats = [
-  {
-    label: "Total Buses",
-    value: "15",
-    trend: "+2 this month",
-    icon: Bus,
-    tone: "primary",
-  },
-  {
-    label: "Drivers",
-    value: "22",
-    trend: "3 pending approval",
-    icon: Users,
-    tone: "warning",
-  },
-  {
-    label: "Students",
-    value: "248",
-    trend: "+12 new",
-    icon: GraduationCap,
-    tone: "success",
-  },
-  {
-    label: "Active Alerts",
-    value: "4",
-    trend: "2 resolved today",
-    icon: AlertTriangle,
-    tone: "destructive",
-  },
-];
-
 const activity = [
   {
     id: 1,
@@ -127,7 +96,7 @@ import {
 import { FleetMap } from "@/components/FleetMap";
 import { useFleetPositions } from "@/lib/tracking";
 import { supabase } from "@/lib/supabase";
-import type { Bus as DbBus, Student as DbStudent } from "@/lib/db";
+import type { Bus as DbBus, Student as DbStudent } from "@/types/db";
 import { useEffect } from "react";
 
 type DialogKind = "bus" | "driver" | "parent" | "route" | "announcement" | null;
@@ -136,39 +105,217 @@ function AdminDashboard() {
   const drivers = useDrivers();
   const fleet = useFleetPositions();
   const [openDialog, setOpenDialog] = useState<DialogKind>(null);
-  
+
   const [buses, setBuses] = useState<DbBus[]>([]);
   const [students, setStudents] = useState<DbStudent[]>([]);
+  const [routes, setRoutes] = useState<any[]>([]);
+  const [statsData, setStatsData] = useState({
+    buses: 0,
+    drivers: 0,
+    students: 0,
+    parents: 0,
+    activeTrips: 0,
+    completedTrips: 0,
+    studentsPicked: 0,
+    studentsDropped: 0,
+    alerts: 0,
+    pendingDrivers: 0,
+  });
+
+  const loadDb = async () => {
+    const { data: b } = await supabase.from("buses").select("*").order("id");
+    if (b) setBuses(b);
+    const { data: s } = await supabase.from("students").select("*");
+    if (s) setStudents(s);
+    const { data: r } = await supabase.from("routes").select("*").order("name");
+    if (r) setRoutes(r);
+
+    // Fetch counts from DB
+    const { count: drvCount } = await supabase
+      .from("profiles")
+      .select("*", { count: "exact", head: true })
+      .eq("role", "driver");
+    const { count: parentCount } = await supabase
+      .from("profiles")
+      .select("*", { count: "exact", head: true })
+      .eq("role", "parent");
+    const { count: pendCount } = await supabase
+      .from("profiles")
+      .select("*", { count: "exact", head: true })
+      .eq("role", "driver")
+      .eq("status", "pending");
+    const { count: studentCount } = await supabase
+      .from("students")
+      .select("*", { count: "exact", head: true });
+    const { count: alertCount } = await supabase
+      .from("notifications")
+      .select("*", { count: "exact", head: true })
+      .eq("type", "emergency");
+
+    const { count: activeTripsCount } = await supabase
+      .from("trips")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "active");
+    const { count: completedTripsCount } = await supabase
+      .from("trips")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "completed");
+    const { count: pickedCount } = await supabase
+      .from("students")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "picked");
+    const { count: droppedCount } = await supabase
+      .from("students")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "dropped");
+
+    setStatsData({
+      buses: b ? b.length : 0,
+      drivers: drvCount || 0,
+      students: studentCount || 0,
+      parents: parentCount || 0,
+      activeTrips: activeTripsCount || 0,
+      completedTrips: completedTripsCount || 0,
+      studentsPicked: pickedCount || 0,
+      studentsDropped: droppedCount || 0,
+      alerts: alertCount || 0,
+      pendingDrivers: pendCount || 0,
+    });
+  };
 
   useEffect(() => {
-    const loadDb = async () => {
-      const { data: b } = await supabase.from("buses").select("*").order("id");
-      if (b) setBuses(b);
-      const { data: s } = await supabase.from("students").select("*");
-      if (s) setStudents(s);
-    };
     loadDb();
 
     const channel1 = supabase
       .channel("admin_buses")
-      .on("postgres_changes", { event: "*", schema: "public", table: "buses" }, loadDb)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "buses" },
+        loadDb,
+      )
       .subscribe();
-      
+
     const channel2 = supabase
       .channel("admin_students")
-      .on("postgres_changes", { event: "*", schema: "public", table: "students" }, loadDb)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "students" },
+        loadDb,
+      )
+      .subscribe();
+
+    const channel3 = supabase
+      .channel("admin_profiles")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "profiles" },
+        loadDb,
+      )
+      .subscribe();
+
+    const channel4 = supabase
+      .channel("admin_notifications")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "notifications" },
+        loadDb,
+      )
+      .subscribe();
+
+    const channel5 = supabase
+      .channel("admin_trips")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "trips" },
+        loadDb,
+      )
+      .subscribe();
+
+    const channel6 = supabase
+      .channel("admin_routes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "routes" },
+        loadDb,
+      )
       .subscribe();
 
     return () => {
       channel1.unsubscribe();
       channel2.unsubscribe();
+      channel3.unsubscribe();
+      channel4.unsubscribe();
+      channel5.unsubscribe();
+      channel6.unsubscribe();
     };
   }, []);
 
-  const updateDriver = (name: string, status: DriverStatus) => {
-    updateDriverStatus(name, status);
-    toast.success(`${name} ${status === "approved" ? "approved" : "rejected"}`);
+  const updateDriver = async (
+    id: string,
+    name: string,
+    status: DriverStatus,
+  ) => {
+    await updateDriverStatus(id, status);
   };
+
+  const dynamicStats = [
+    {
+      label: "Total Students",
+      value: String(statsData.students),
+      trend: "Total registered",
+      icon: GraduationCap,
+      tone: "success",
+    },
+    {
+      label: "Total Parents",
+      value: String(statsData.parents),
+      trend: "Linked accounts",
+      icon: Users,
+      tone: "primary",
+    },
+    {
+      label: "Total Drivers",
+      value: String(statsData.drivers),
+      trend: `${statsData.pendingDrivers} pending approval`,
+      icon: Users,
+      tone: "warning",
+    },
+    {
+      label: "Total Buses",
+      value: String(statsData.buses),
+      trend: `${buses.filter((b) => b.status === "Running" || b.status === "Active").length} running / active`,
+      icon: Bus,
+      tone: "primary",
+    },
+    {
+      label: "Active Trips",
+      value: String(statsData.activeTrips),
+      trend: "Buses currently en route",
+      icon: RouteIcon,
+      tone: "success",
+    },
+    {
+      label: "Completed Trips",
+      value: String(statsData.completedTrips),
+      trend: "Trips today",
+      icon: CheckCircle2,
+      tone: "primary",
+    },
+    {
+      label: "Students Picked",
+      value: String(statsData.studentsPicked),
+      trend: "Onboarded today",
+      icon: CheckCircle2,
+      tone: "primary",
+    },
+    {
+      label: "Students Dropped",
+      value: String(statsData.studentsDropped),
+      trend: "Dropped safely today",
+      icon: CheckCircle2,
+      tone: "success",
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -203,7 +350,7 @@ function AdminDashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {stats.map((s) => (
+        {dynamicStats.map((s) => (
           <Card key={s.label} className="overflow-hidden p-5">
             <div className="flex items-start justify-between">
               <div>
@@ -248,7 +395,9 @@ function AdminDashboard() {
       <Card className="p-5 overflow-x-auto">
         <div className="mb-4">
           <h2 className="text-lg font-semibold">Live Bus Monitoring</h2>
-          <p className="text-xs text-muted-foreground">Real-time status synced from database</p>
+          <p className="text-xs text-muted-foreground">
+            Real-time status synced from database
+          </p>
         </div>
         <Table>
           <TableHeader>
@@ -264,20 +413,28 @@ function AdminDashboard() {
           </TableHeader>
           <TableBody>
             {buses.map((b) => {
-              const onboard = students.filter(s => s.bus_id === b.id && s.status !== "dropped").length;
-              const total = students.filter(s => s.bus_id === b.id).length;
+              const onboard = students.filter(
+                (s) => s.bus_id === b.id && s.status !== "dropped",
+              ).length;
+              const total = students.filter((s) => s.bus_id === b.id).length;
               return (
                 <TableRow key={b.id}>
                   <TableCell className="font-bold">#{b.id}</TableCell>
                   <TableCell>{b.driver_name}</TableCell>
-                  <TableCell className="text-muted-foreground">{b.route_name}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {b.route_name}
+                  </TableCell>
                   <TableCell>
                     <span className="font-mono">{b.speed_kmh}</span> km/h
                   </TableCell>
                   <TableCell>
-                    <Badge variant={onboard > 0 ? "default" : "secondary"}>{onboard} / {total}</Badge>
+                    <Badge variant={onboard > 0 ? "default" : "secondary"}>
+                      {onboard} / {total}
+                    </Badge>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{b.next_stop}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {b.next_stop}
+                  </TableCell>
                   <TableCell className="text-right">
                     <Badge
                       variant="outline"
@@ -363,7 +520,7 @@ function AdminDashboard() {
           <ul className="space-y-3">
             {drivers.map((d) => (
               <li
-                key={d.name}
+                key={d.id || d.name}
                 className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3"
               >
                 <div>
@@ -378,13 +535,13 @@ function AdminDashboard() {
                       size="sm"
                       variant="ghost"
                       className="text-destructive hover:bg-destructive/10"
-                      onClick={() => updateDriver(d.name, "rejected")}
+                      onClick={() => updateDriver(d.id, d.name, "rejected")}
                     >
                       Reject
                     </Button>
                     <Button
                       size="sm"
-                      onClick={() => updateDriver(d.name, "approved")}
+                      onClick={() => updateDriver(d.id, d.name, "approved")}
                     >
                       <CheckCircle2 className="mr-1 h-3 w-3" /> Approve
                     </Button>
@@ -416,6 +573,8 @@ function AdminDashboard() {
       <AddEntityDialog
         kind={openDialog === "announcement" ? null : openDialog}
         onClose={() => setOpenDialog(null)}
+        buses={buses}
+        routes={routes}
       />
       <AnnouncementDialog
         open={openDialog === "announcement"}
@@ -516,14 +675,23 @@ function AnnouncementDialog({
   );
 }
 
+import { addDriver as addDriverService } from "@/lib/drivers";
+import { addParent as addParentService } from "@/lib/parents";
+import { addBus as addBusService } from "@/services/bus";
+
 function AddEntityDialog({
   kind,
   onClose,
+  buses,
+  routes,
 }: {
   kind: DialogKind;
   onClose: () => void;
+  buses: any[];
+  routes: any[];
 }) {
   const open = kind !== null;
+  const [saving, setSaving] = useState(false);
 
   const config = {
     bus: {
@@ -531,46 +699,241 @@ function AddEntityDialog({
       description: "Register a new bus to the fleet.",
       icon: Bus,
       fields: [
-        { name: "busNumber", label: "Bus number", placeholder: "e.g. Bus 015" },
-        { name: "plate", label: "Plate number", placeholder: "TN-01-AB-1234" },
+        {
+          name: "busNumber",
+          label: "Bus number / ID",
+          placeholder: "e.g. 015",
+          required: true,
+        },
         {
           name: "capacity",
           label: "Capacity",
           placeholder: "40",
           type: "number",
+          required: true,
         },
-        { name: "route", label: "Assigned route", placeholder: "Route A" },
+        {
+          name: "route_id",
+          label: "Assigned Route",
+          type: "select",
+          options: [
+            { label: "Unassigned", value: "" },
+            ...routes.map((rt) => ({ label: rt.name, value: rt.id })),
+          ],
+          required: false,
+        },
       ],
     },
     driver: {
       title: "Add new driver",
-      description: "Onboard a new driver to your fleet.",
+      description: "Onboard a new driver with license details.",
       icon: Users,
       fields: [
-        { name: "name", label: "Full name", placeholder: "John Doe" },
-        { name: "phone", label: "Phone", placeholder: "+91 90000 00000" },
+        {
+          name: "name",
+          label: "Full Name",
+          placeholder: "John Doe",
+          required: true,
+        },
+        {
+          name: "email",
+          label: "Email Address",
+          placeholder: "john@example.com",
+          type: "email",
+          required: true,
+        },
+        {
+          name: "phone",
+          label: "Phone Number",
+          placeholder: "+91 90000 00000",
+          required: true,
+        },
         {
           name: "licence",
-          label: "Licence number",
-          placeholder: "TN-01-AB-9999",
+          label: "Licence Number",
+          placeholder: "DL-1234567890",
+          required: true,
         },
-        { name: "route", label: "Assigned route", placeholder: "Route A" },
+        {
+          name: "licenseExpiry",
+          label: "Licence Expiry Date",
+          type: "date",
+          required: false,
+        },
+        {
+          name: "experience",
+          label: "Years of Experience",
+          type: "number",
+          placeholder: "5",
+          required: false,
+        },
+        {
+          name: "address",
+          label: "Address",
+          placeholder: "Apartment, Street, City",
+          required: false,
+        },
+        {
+          name: "emergencyContact",
+          label: "Emergency Contact",
+          placeholder: "Name / Phone",
+          required: false,
+        },
+        {
+          name: "bus_id",
+          label: "Assigned Bus",
+          type: "select",
+          options: [
+            { label: "Unassigned", value: "" },
+            ...buses.map((b) => ({ label: `Bus ${b.id}`, value: b.id })),
+          ],
+          required: false,
+        },
+        {
+          name: "routeId",
+          label: "Assigned Route",
+          type: "select",
+          options: [
+            { label: "Unassigned", value: "" },
+            ...routes.map((r) => ({ label: r.name, value: r.id })),
+          ],
+          required: false,
+        },
+        {
+          name: "password",
+          label: "Temporary Password",
+          placeholder: "123456",
+          type: "password",
+          required: false,
+        },
       ],
     },
     parent: {
-      title: "Add new parent",
-      description: "Create a parent account linked to a student.",
+      title: "Add new parent & student",
+      description: "Onboard parent-student-transport linked accounts.",
       icon: GraduationCap,
       fields: [
-        { name: "name", label: "Parent name", placeholder: "Jane Smith" },
+        // Parent Details
+        {
+          name: "name",
+          label: "Parent Name",
+          placeholder: "Jane Smith",
+          required: true,
+        },
+        {
+          name: "fatherName",
+          label: "Father's Name",
+          placeholder: "Robert Smith",
+          required: false,
+        },
+        {
+          name: "motherName",
+          label: "Mother's Name",
+          placeholder: "Mary Smith",
+          required: false,
+        },
         {
           name: "email",
-          label: "Email",
+          label: "Parent Email",
           placeholder: "jane@example.com",
           type: "email",
+          required: true,
         },
-        { name: "phone", label: "Phone", placeholder: "+91 90000 00000" },
-        { name: "child", label: "Child name", placeholder: "Aarav S" },
+        {
+          name: "phone",
+          label: "Parent Phone Number",
+          placeholder: "+91 90000 00000",
+          required: true,
+        },
+        {
+          name: "address",
+          label: "Residential Address",
+          placeholder: "Street address, area",
+          required: false,
+        },
+        {
+          name: "password",
+          label: "Temporary Password",
+          placeholder: "123456",
+          type: "password",
+          required: false,
+        },
+        // Student Details
+        {
+          name: "child",
+          label: "Student Name",
+          placeholder: "Aarav Smith",
+          required: true,
+        },
+        {
+          name: "student_roll_no",
+          label: "Register / Roll No (Unique)",
+          placeholder: "2026015",
+          required: true,
+        },
+        {
+          name: "dob",
+          label: "Student Date of Birth",
+          type: "date",
+          required: false,
+        },
+        {
+          name: "gender",
+          label: "Student Gender",
+          type: "select",
+          options: [
+            { label: "Select Gender", value: "" },
+            { label: "Male", value: "male" },
+            { label: "Female", value: "female" },
+            { label: "Other", value: "other" },
+          ],
+          required: false,
+        },
+        {
+          name: "class",
+          label: "Student Class",
+          placeholder: "Grade 6",
+          required: false,
+        },
+        {
+          name: "section",
+          label: "Student Section",
+          placeholder: "A",
+          required: false,
+        },
+        // Transport Details
+        {
+          name: "busId",
+          label: "Assigned Transport Bus",
+          type: "select",
+          options: [
+            { label: "Unassigned", value: "" },
+            ...buses.map((b) => ({ label: `Bus ${b.id}`, value: b.id })),
+          ],
+          required: false,
+        },
+        {
+          name: "routeId",
+          label: "Assigned Transport Route",
+          type: "select",
+          options: [
+            { label: "Unassigned", value: "" },
+            ...routes.map((r) => ({ label: r.name, value: r.id })),
+          ],
+          required: false,
+        },
+        {
+          name: "pickupAddress",
+          label: "Pickup Stop Address",
+          placeholder: "Same as resident address",
+          required: false,
+        },
+        {
+          name: "dropAddress",
+          label: "Drop Stop Address",
+          placeholder: "Same as resident address",
+          required: false,
+        },
       ],
     },
     route: {
@@ -578,14 +941,30 @@ function AddEntityDialog({
       description: "Define a new bus route with stops.",
       icon: RouteIcon,
       fields: [
-        { name: "name", label: "Route name", placeholder: "Route G" },
-        { name: "start", label: "Start point", placeholder: "Anna Nagar Roundana" },
-        { name: "end", label: "End point", placeholder: "Blue Horizon Int. School" },
+        {
+          name: "name",
+          label: "Route name",
+          placeholder: "Route G",
+          required: true,
+        },
+        {
+          name: "start",
+          label: "Start point",
+          placeholder: "Anna Nagar Roundana",
+          required: true,
+        },
+        {
+          name: "end",
+          label: "End point",
+          placeholder: "Blue Horizon Int. School",
+          required: true,
+        },
         {
           name: "stops",
           label: "Number of stops",
           placeholder: "8",
           type: "number",
+          required: true,
         },
       ],
     },
@@ -593,30 +972,106 @@ function AddEntityDialog({
 
   const current = kind && kind !== "announcement" ? config[kind] : null;
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!current || !kind) return;
+    setSaving(true);
     const data = new FormData(e.currentTarget);
-    if (kind === "route") {
-      addRoute({
-        name: String(data.get("name") || "Route"),
-        start: String(data.get("start") || ""),
-        end: String(data.get("end") || ""),
-        stops: Number(data.get("stops") || 0),
-        students: 0,
-        bus: "—",
-        driver: "Unassigned",
-      });
+    try {
+      if (kind === "route") {
+        await addRoute({
+          name: String(data.get("name") || "Route"),
+          start: String(data.get("start") || ""),
+          end: String(data.get("end") || ""),
+          stops: Number(data.get("stops") || 0),
+          students: 0,
+          bus: "—",
+          driver: "Unassigned",
+        });
+        toast.success("Route added successfully");
+      } else if (kind === "bus") {
+        await addBusService({
+          busNumber: String(data.get("busNumber")),
+          capacity: Number(data.get("capacity") || 40),
+          route_id: data.get("route_id")
+            ? String(data.get("route_id"))
+            : undefined,
+        });
+        toast.success("Bus registered successfully");
+      } else if (kind === "driver") {
+        const d = await addDriverService({
+          name: String(data.get("name")),
+          email: String(data.get("email")),
+          phone: String(data.get("phone")),
+          licence: String(data.get("licence")),
+          bus_id: String(data.get("bus_id")),
+          password: String(data.get("password") || "123456"),
+          licenseExpiry: data.get("licenseExpiry")
+            ? String(data.get("licenseExpiry"))
+            : undefined,
+          experience: data.get("experience")
+            ? Number(data.get("experience"))
+            : undefined,
+          address: data.get("address")
+            ? String(data.get("address"))
+            : undefined,
+          emergencyContact: data.get("emergencyContact")
+            ? String(data.get("emergencyContact"))
+            : undefined,
+          routeId: data.get("routeId")
+            ? String(data.get("routeId"))
+            : undefined,
+        });
+        if (!d) throw new Error("Driver account creation failed.");
+      } else if (kind === "parent") {
+        const p = await addParentService({
+          name: String(data.get("name")),
+          email: String(data.get("email")),
+          phone: String(data.get("phone")),
+          student_name: String(data.get("child")),
+          student_roll_no: String(data.get("student_roll_no")),
+          password: String(data.get("password") || "123456"),
+          fatherName: data.get("fatherName")
+            ? String(data.get("fatherName"))
+            : undefined,
+          motherName: data.get("motherName")
+            ? String(data.get("motherName"))
+            : undefined,
+          address: data.get("address")
+            ? String(data.get("address"))
+            : undefined,
+          gender: data.get("gender")
+            ? (String(data.get("gender")) as any)
+            : undefined,
+          dob: data.get("dob") ? String(data.get("dob")) : undefined,
+          class: data.get("class") ? String(data.get("class")) : undefined,
+          section: data.get("section")
+            ? String(data.get("section"))
+            : undefined,
+          pickupAddress: data.get("pickupAddress")
+            ? String(data.get("pickupAddress"))
+            : undefined,
+          dropAddress: data.get("dropAddress")
+            ? String(data.get("dropAddress"))
+            : undefined,
+          busId: data.get("busId") ? String(data.get("busId")) : undefined,
+          routeId: data.get("routeId")
+            ? String(data.get("routeId"))
+            : undefined,
+        });
+        if (!p) throw new Error("Parent account creation failed.");
+      }
+      onClose();
+    } catch (err: any) {
+      toast.error(`Error: ${err.message}`);
+    } finally {
+      setSaving(false);
     }
-    toast.success(
-      `${current.title.replace("Add new ", "")} added successfully`,
-    );
-    onClose();
   };
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         {current && (
           <form onSubmit={handleSubmit}>
             <DialogHeader>
@@ -627,24 +1082,50 @@ function AddEntityDialog({
               <DialogDescription>{current.description}</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              {current.fields.map((f: any) => (
-                <div key={f.name} className="grid gap-2">
-                  <Label htmlFor={f.name}>{f.label}</Label>
-                  <Input
-                    id={f.name}
-                    name={f.name}
-                    type={"type" in f ? f.type : "text"}
-                    placeholder={f.placeholder}
-                    required
-                  />
-                </div>
-              ))}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {current.fields.map((f: any) => (
+                  <div key={f.name} className="grid gap-2">
+                    <Label htmlFor={f.name}>{f.label}</Label>
+                    {f.type === "select" ? (
+                      <select
+                        id={f.name}
+                        name={f.name}
+                        required={f.required}
+                        disabled={saving}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {f.options.map((opt: any) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <Input
+                        id={f.name}
+                        name={f.name}
+                        type={"type" in f ? f.type : "text"}
+                        placeholder={f.placeholder}
+                        required={f.required}
+                        disabled={saving}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={onClose}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={saving}
+              >
                 Cancel
               </Button>
-              <Button type="submit">Save</Button>
+              <Button type="submit" disabled={saving}>
+                Save
+              </Button>
             </DialogFooter>
           </form>
         )}

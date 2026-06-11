@@ -31,14 +31,20 @@ export function NotificationsDropdown({ role }: { role: string }) {
 
   useEffect(() => {
     // Request push notification permission natively and for web
-    if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
+    if (
+      typeof window !== "undefined" &&
+      "Notification" in window &&
+      Notification.permission === "default"
+    ) {
       Notification.requestPermission();
     }
-    
+
     // Dynamically import Capacitor to prevent SSR crashes
-    import("@capacitor/local-notifications").then(({ LocalNotifications }) => {
-      LocalNotifications.requestPermissions().catch(() => {});
-    }).catch(() => {});
+    import("@capacitor/local-notifications")
+      .then(({ LocalNotifications }) => {
+        LocalNotifications.requestPermissions().catch(() => {});
+      })
+      .catch(() => {});
 
     // Initial fetch
     fetchNotifications(role).then((data) => {
@@ -56,20 +62,22 @@ export function NotificationsDropdown({ role }: { role: string }) {
             body: payload.new.message,
           });
         }
-        
+
         // Trigger Capacitor native notification
-        import("@capacitor/local-notifications").then(({ LocalNotifications }) => {
-          LocalNotifications.schedule({
-            notifications: [
-              {
-                title: payload.new.title,
-                body: payload.new.message,
-                id: Date.now(),
-                schedule: { at: new Date(Date.now() + 100) },
-              }
-            ]
-          }).catch(() => {});
-        }).catch(() => {});
+        import("@capacitor/local-notifications")
+          .then(({ LocalNotifications }) => {
+            LocalNotifications.schedule({
+              notifications: [
+                {
+                  title: payload.new.title,
+                  body: payload.new.message,
+                  id: Date.now(),
+                  schedule: { at: new Date(Date.now() + 100) },
+                },
+              ],
+            }).catch(() => {});
+          })
+          .catch(() => {});
       } else if (payload.eventType === "UPDATE") {
         setNotifications((prev) =>
           prev.map((n) => (n.id === payload.new.id ? payload.new : n)),

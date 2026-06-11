@@ -9,14 +9,21 @@ import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { getSession, homeFor, type Role } from "@/lib/auth";
 import { signIn as supabaseSignIn } from "@/services/auth";
+import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 const loginSchema = z.object({
-  email: z.string().min(1, "Email and Password Required").email("Invalid email address"),
-  password: z.string().min(1, "Email and Password Required").min(6, "Password must contain at least 6 characters"),
+  email: z
+    .string()
+    .min(1, "Email and Password Required")
+    .email("Invalid email address"),
+  password: z
+    .string()
+    .min(1, "Email and Password Required")
+    .min(6, "Password must contain at least 6 characters"),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -52,22 +59,41 @@ function LoginPage() {
       const res = await supabaseSignIn(data.email, data.password);
       if (res && res.error) {
         if (res.error.toLowerCase().includes("invalid login credentials")) {
-          setError("password", { type: "manual", message: "Incorrect password" });
-          toast.error("Incorrect password or email. Does not match the database.", { className: "text-destructive border-destructive" });
+          setError("password", {
+            type: "manual",
+            message: "Incorrect password",
+          });
+          toast.error(
+            "Incorrect password or email. Does not match the database.",
+            { className: "text-destructive border-destructive" },
+          );
         } else {
-          toast.error(res.error, { className: "text-destructive border-destructive" });
+          toast.error(res.error, {
+            className: "text-destructive border-destructive",
+          });
         }
         setIsLoading(false);
         return;
       }
-      
-      toast.success("Login Successful (v2)");
-      localStorage.setItem("bh_role", role);
+
       const sess = await getSession();
       if (sess && sess.role) {
+        if (sess.role !== role) {
+          toast.error(
+            `Account exists but is registered as a ${sess.role}, not a ${role}.`,
+            { className: "text-destructive border-destructive" },
+          );
+          await supabase.auth.signOut();
+          setIsLoading(false);
+          return;
+        }
+        toast.success("Login Successful");
         navigate({ to: homeFor(sess.role) });
       } else {
-        navigate({ to: homeFor(role) }); // fallback
+        toast.error("User profile not found in database.", {
+          className: "text-destructive border-destructive",
+        });
+        await supabase.auth.signOut();
       }
     } catch (err) {
       toast.error("Server Error. Please try again.");
@@ -77,7 +103,10 @@ function LoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen flex-col" style={{ background: "var(--gradient-hero)" }}>
+    <div
+      className="relative flex min-h-screen flex-col"
+      style={{ background: "var(--gradient-hero)" }}
+    >
       <header className="container mx-auto flex items-center justify-between px-4 py-4">
         <Link to="/">
           <Logo variant="light" />
@@ -87,10 +116,7 @@ function LoginPage() {
 
       <div className="flex flex-1 items-center justify-center px-4 py-8">
         <Card className="glass-card w-full max-w-md overflow-hidden p-0 border-0 rounded-2xl">
-          <Tabs
-            value={role}
-            onValueChange={(v) => setRole(v as Role)}
-          >
+          <Tabs value={role} onValueChange={(v) => setRole(v as Role)}>
             <TabsList className="grid h-14 w-full grid-cols-3 rounded-none bg-black/10 backdrop-blur-md p-1 gap-1">
               {(["parent", "driver", "admin"] as Role[]).map((r) => (
                 <TabsTrigger
@@ -112,10 +138,15 @@ function LoginPage() {
                 </p>
               </div>
 
-              <form onSubmit={handleSubmit(onEmailSubmit)} className="space-y-6">
+              <form
+                onSubmit={handleSubmit(onEmailSubmit)}
+                className="space-y-6"
+              >
                 <div className="space-y-4">
                   <div>
-                    <div className={`flex items-center gap-3 rounded-xl border bg-background/50 px-3 shadow-sm transition-colors focus-within:ring-1 ${errors.email ? "border-destructive focus-within:ring-destructive" : "focus-within:border-primary focus-within:ring-primary"}`}>
+                    <div
+                      className={`flex items-center gap-3 rounded-xl border bg-background/50 px-3 shadow-sm transition-colors focus-within:ring-1 ${errors.email ? "border-destructive focus-within:ring-destructive" : "focus-within:border-primary focus-within:ring-primary"}`}
+                    >
                       <Mail className="h-5 w-5 text-muted-foreground" />
                       <Input
                         {...register("email")}
@@ -125,11 +156,15 @@ function LoginPage() {
                       />
                     </div>
                     {errors.email && (
-                      <span className="text-xs text-destructive mt-1 ml-1">{errors.email.message}</span>
+                      <span className="text-xs text-destructive mt-1 ml-1">
+                        {errors.email.message}
+                      </span>
                     )}
                   </div>
                   <div>
-                    <div className={`flex items-center gap-3 rounded-xl border bg-background/50 px-3 shadow-sm transition-colors focus-within:ring-1 ${errors.password ? "border-destructive focus-within:ring-destructive" : "focus-within:border-primary focus-within:ring-primary"}`}>
+                    <div
+                      className={`flex items-center gap-3 rounded-xl border bg-background/50 px-3 shadow-sm transition-colors focus-within:ring-1 ${errors.password ? "border-destructive focus-within:ring-destructive" : "focus-within:border-primary focus-within:ring-primary"}`}
+                    >
                       <Lock className="h-5 w-5 text-muted-foreground" />
                       <Input
                         type={showPassword ? "text" : "password"}
@@ -144,17 +179,26 @@ function LoginPage() {
                         className="text-muted-foreground hover:text-foreground transition-colors"
                         disabled={isLoading}
                       >
-                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        {showPassword ? (
+                          <EyeOff className="h-5 w-5" />
+                        ) : (
+                          <Eye className="h-5 w-5" />
+                        )}
                       </button>
                     </div>
                     {errors.password && (
-                      <span className="text-xs text-destructive mt-1 ml-1">{errors.password.message}</span>
+                      <span className="text-xs text-destructive mt-1 ml-1">
+                        {errors.password.message}
+                      </span>
                     )}
                   </div>
                 </div>
 
                 <div className="flex justify-end">
-                  <Link to="/forgot-password" className="text-sm font-medium text-primary hover:underline">
+                  <Link
+                    to="/forgot-password"
+                    className="text-sm font-medium text-primary hover:underline"
+                  >
                     Forgot password?
                   </Link>
                 </div>
@@ -164,7 +208,11 @@ function LoginPage() {
                   className="h-12 w-full text-base font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
                   disabled={isLoading}
                 >
-                  {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "LOGIN"}
+                  {isLoading ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    "LOGIN"
+                  )}
                 </Button>
               </form>
             </div>

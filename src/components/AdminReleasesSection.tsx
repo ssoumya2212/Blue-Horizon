@@ -67,7 +67,8 @@ export function AdminReleasesSection() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this release record?")) return;
+    if (!confirm("Are you sure you want to delete this release record?"))
+      return;
     const { error } = await supabase.from("app_releases").delete().eq("id", id);
     if (error) toast.error("Failed to delete release");
     else {
@@ -111,7 +112,9 @@ export function AdminReleasesSection() {
                   <TableRow key={r.id}>
                     <TableCell className="font-medium">{r.version}</TableCell>
                     <TableCell className="capitalize">{r.platform}</TableCell>
-                    <TableCell className="text-muted-foreground">{r.file_size || "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {r.file_size || "—"}
+                    </TableCell>
                     <TableCell className="text-muted-foreground">
                       {new Date(r.created_at).toLocaleDateString()}
                     </TableCell>
@@ -121,7 +124,9 @@ export function AdminReleasesSection() {
                           <CheckCircle className="h-3 w-3" /> Latest
                         </span>
                       ) : (
-                        <span className="text-xs text-muted-foreground">Archived</span>
+                        <span className="text-xs text-muted-foreground">
+                          Archived
+                        </span>
                       )}
                     </TableCell>
                     <TableCell className="text-right">
@@ -189,19 +194,21 @@ function NewReleaseDialog({
 
     try {
       // Upload to Supabase Storage
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split(".").pop();
       const fileName = `${platform}-v${version}-${Date.now()}.${fileExt}`;
-      
+
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("releases")
-        .upload(fileName, file, { cacheControl: '3600', upsert: false });
+        .upload(fileName, file, { cacheControl: "3600", upsert: false });
 
       if (uploadError) {
         throw new Error(`Upload failed: ${uploadError.message}`);
       }
 
       // Get public URL
-      const { data: publicUrlData } = supabase.storage.from("releases").getPublicUrl(fileName);
+      const { data: publicUrlData } = supabase.storage
+        .from("releases")
+        .getPublicUrl(fileName);
       const fileUrl = publicUrlData.publicUrl;
 
       // File size formatting
@@ -225,7 +232,8 @@ function NewReleaseDialog({
         is_latest,
       });
 
-      if (dbError) throw new Error(`Database insert failed: ${dbError.message}`);
+      if (dbError)
+        throw new Error(`Database insert failed: ${dbError.message}`);
 
       toast.success("Release uploaded successfully!");
       onSuccess();
@@ -294,8 +302,16 @@ function NewReleaseDialog({
             </div>
 
             <div className="flex items-center gap-2 mt-2">
-              <input type="checkbox" id="is_latest" name="is_latest" defaultChecked className="h-4 w-4" />
-              <Label htmlFor="is_latest" className="cursor-pointer">Set as the latest release for this platform</Label>
+              <input
+                type="checkbox"
+                id="is_latest"
+                name="is_latest"
+                defaultChecked
+                className="h-4 w-4"
+              />
+              <Label htmlFor="is_latest" className="cursor-pointer">
+                Set as the latest release for this platform
+              </Label>
             </div>
           </div>
 
@@ -311,7 +327,8 @@ function NewReleaseDialog({
             <Button type="submit" disabled={uploading}>
               {uploading ? (
                 <>
-                  <Upload className="mr-2 h-4 w-4 animate-bounce" /> Uploading...
+                  <Upload className="mr-2 h-4 w-4 animate-bounce" />{" "}
+                  Uploading...
                 </>
               ) : (
                 "Upload Release"

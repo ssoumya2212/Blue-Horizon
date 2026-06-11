@@ -27,7 +27,7 @@ export function addPendingAction(type: string, payload: any) {
     timestamp: Date.now(),
   });
   localStorage.setItem(SYNC_KEY, JSON.stringify(actions));
-  
+
   if (navigator.onLine) {
     syncOfflineActions();
   }
@@ -44,7 +44,10 @@ export async function syncOfflineActions() {
       if (action.type === "UPDATE_LOCATION") {
         await supabase.from("bus_locations").upsert(action.payload);
       } else if (action.type === "MARK_DROP") {
-        await supabase.from("students").update({ status: "dropped" }).eq("id", action.payload.student_id);
+        await supabase
+          .from("students")
+          .update({ status: "dropped" })
+          .eq("id", action.payload.student_id);
         await supabase.from("drop_logs").insert(action.payload.drop_log);
       }
       // Add more cases as needed

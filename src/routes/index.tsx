@@ -17,7 +17,6 @@ import { PublicFooter } from "@/components/PublicFooter";
 
 import { ThemeToggle } from "@/components/ThemeToggle";
 
-
 import { isNative } from "@/lib/platform";
 
 export const Route = createFileRoute("/")({
@@ -141,7 +140,11 @@ function LandingPage() {
                     size="lg"
                     className="bg-sky-500 text-white hover:bg-sky-600"
                   >
-                    <a href="https://github.com/ssoumya2212/Blue-Horizon/releases/latest/download/Blue.Horizon.Setup.1.0.0.exe" target="_blank" rel="noopener noreferrer">
+                    <a
+                      href="https://github.com/ssoumya2212/Blue-Horizon/releases/latest/download/Blue.Horizon.Setup.1.0.0.exe"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       <Download className="mr-2 h-4 w-4" /> Windows (.exe)
                     </a>
                   </Button>
