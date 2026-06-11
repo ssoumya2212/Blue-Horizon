@@ -14,14 +14,13 @@ export async function getSession(): Promise<Session> {
       .from("profiles")
       .select("role, full_name")
       .eq("id", session.user.id)
-      .single();
+      .single()
+      .catch(() => ({ data: null })); // ignore errors if table doesn't exist
       
-    if (!profile) return null;
-    
     return {
       id: session.user.id,
-      username: profile.full_name || session.user?.email || "User",
-      role: profile.role as Role
+      username: profile?.full_name || session.user?.user_metadata?.full_name || session.user?.email || "User",
+      role: (profile?.role || session.user?.user_metadata?.role || "parent") as Role
     };
   } catch (err) {
     console.error("Auth error:", err);
