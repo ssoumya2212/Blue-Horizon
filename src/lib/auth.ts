@@ -21,7 +21,7 @@ export async function getSession(): Promise<Session> {
     return {
       id: session.user.id,
       username: profile?.full_name || session.user?.user_metadata?.full_name || session.user?.email || "User",
-      role: (profile?.role || session.user?.user_metadata?.role || fallbackRole) as Role
+      role: fallbackRole as Role
     };
   } catch (err) {
     console.error("Auth error:", err);
