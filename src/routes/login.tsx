@@ -61,7 +61,7 @@ function LoginPage() {
         return;
       }
       
-      toast.success("Login Successful");
+      toast.success("Login Successful (v2)");
       localStorage.setItem("bh_role", role);
       const sess = await getSession();
       if (sess && sess.role) {
