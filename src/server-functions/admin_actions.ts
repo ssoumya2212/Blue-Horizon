@@ -296,7 +296,6 @@ export const adminAddParentWithStudent = createServerFn({ method: "POST" })
             phone: phone || null,
             role: "parent",
             status: "approved",
-            first_login: true,
             password_changed: false, // workflow field
             created_by_admin: true, // workflow field
             student_name: studentName,
@@ -426,7 +425,6 @@ export const adminAddDriver = createServerFn({ method: "POST" })
             phone: phone || null,
             role: "driver",
             status: "approved",
-            first_login: false,
             licence: licenseNumber,
             bus_id: busId || null,
           });
@@ -487,10 +485,10 @@ export const completeFirstLogin = createServerFn({ method: "POST" })
         if (authError) throw authError;
       }
 
-      // 2. Set first_login = false and password_changed = true
+      // 2. Set password_changed = true
       const { error: profileError } = await supabaseAdmin
         .from("profiles")
-        .update({ first_login: false, password_changed: true })
+        .update({ password_changed: true })
         .eq("id", userId);
 
       if (profileError) throw profileError;

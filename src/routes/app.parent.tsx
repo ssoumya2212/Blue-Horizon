@@ -243,12 +243,12 @@ function ParentDashboard() {
     );
   }
 
-  if (profile?.first_login) {
+  if (profile?.created_by_admin && !profile?.password_changed) {
     return (
       <FirstLoginOnboarding
         profile={profile}
         onComplete={() => {
-          setProfile((prev: any) => ({ ...prev, first_login: false }));
+          setProfile((prev: any) => ({ ...prev, password_changed: true }));
           toast.success("Account setup completed successfully!");
         }}
       />
