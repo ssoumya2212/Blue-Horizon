@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, Navigate } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, Navigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -10,7 +10,7 @@ export const Route = createFileRoute("/app")({
   beforeLoad: async () => {
     const session = await getSession();
     if (!session) {
-      throw Navigate({ to: "/login" }); // Need to use redirect but Tanstack Start might prefer redirect()
+      throw redirect({ to: "/login" });
     }
   },
   component: AppLayout,

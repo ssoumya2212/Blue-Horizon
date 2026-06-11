@@ -1,4 +1,4 @@
-export type StudentStatus = 'pending' | 'picked' | 'dropped';
+export type StudentStatus = 'pending' | 'picked' | 'dropped' | 'absent';
 
 export interface Student {
   id: string;

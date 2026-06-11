@@ -70,9 +70,9 @@ function Tracking() {
                   <Badge
                     variant="outline"
                     className={
-                      b.status === "On Route"
+                      b.status === "Running"
                         ? "border-success/30 bg-success/10 text-success"
-                        : b.status === "Delay"
+                        : b.status === "Delayed"
                           ? "border-amber-300 bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400"
                           : "border-border text-muted-foreground"
                     }
