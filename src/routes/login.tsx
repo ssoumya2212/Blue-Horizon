@@ -62,6 +62,7 @@ function LoginPage() {
       }
       
       toast.success("Login Successful");
+      localStorage.setItem("bh_role", role);
       const sess = await getSession();
       if (sess && sess.role) {
         navigate({ to: homeFor(sess.role) });

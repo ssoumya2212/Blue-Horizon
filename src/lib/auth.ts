@@ -16,10 +16,12 @@ export async function getSession(): Promise<Session> {
       .eq("id", session.user.id)
       .single();
       
+    const fallbackRole = typeof window !== "undefined" ? localStorage.getItem("bh_role") || "parent" : "parent";
+    
     return {
       id: session.user.id,
       username: profile?.full_name || session.user?.user_metadata?.full_name || session.user?.email || "User",
-      role: (profile?.role || session.user?.user_metadata?.role || "parent") as Role
+      role: (profile?.role || session.user?.user_metadata?.role || fallbackRole) as Role
     };
   } catch (err) {
     console.error("Auth error:", err);
@@ -28,6 +30,9 @@ export async function getSession(): Promise<Session> {
 }
 
 export async function signOut() {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("bh_role");
+  }
   await supabase.auth.signOut({ scope: "global" });
 }
 
