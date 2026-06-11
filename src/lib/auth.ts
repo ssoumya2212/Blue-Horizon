@@ -14,8 +14,7 @@ export async function getSession(): Promise<Session> {
       .from("profiles")
       .select("role, full_name")
       .eq("id", session.user.id)
-      .single()
-      .catch(() => ({ data: null })); // ignore errors if table doesn't exist
+      .single();
       
     return {
       id: session.user.id,
