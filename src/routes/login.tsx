@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { signIn as setLocalSession, homeFor, type Role } from "@/lib/auth";
+import { getSession, homeFor, type Role } from "@/lib/auth";
 import { signIn as supabaseSignIn } from "@/services/auth";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -40,6 +40,7 @@ function LoginPage() {
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors },
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -50,13 +51,23 @@ function LoginPage() {
     try {
       const res = await supabaseSignIn(data.email, data.password);
       if (res && res.error) {
-        toast.error(res.error, { className: "text-destructive border-destructive" });
+        if (res.error.toLowerCase().includes("invalid login credentials")) {
+          setError("password", { type: "manual", message: "Incorrect password" });
+          toast.error("Incorrect password or email. Does not match the database.", { className: "text-destructive border-destructive" });
+        } else {
+          toast.error(res.error, { className: "text-destructive border-destructive" });
+        }
         setIsLoading(false);
         return;
       }
+      
       toast.success("Login Successful");
-      setLocalSession(data.email, role);
-      navigate({ to: homeFor(role) });
+      const sess = await getSession();
+      if (sess && sess.role) {
+        navigate({ to: homeFor(sess.role) });
+      } else {
+        navigate({ to: homeFor(role) }); // fallback
+      }
     } catch (err) {
       toast.error("Server Error. Please try again.");
     } finally {

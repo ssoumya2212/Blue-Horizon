@@ -31,7 +31,7 @@ export const signIn = async (email: string, password: string) => {
 
 // LOGOUT
 export const signOut = async () => {
-  const { error } = await supabase.auth.signOut();
+  const { error } = await supabase.auth.signOut({ scope: "global" });
 
   if (error) {
     console.log(error.message);

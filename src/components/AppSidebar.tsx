@@ -11,6 +11,7 @@ import {
   Route as RouteIcon,
   Phone,
   FileText,
+  Activity,
 } from "lucide-react";
 import {
   Sidebar,
@@ -37,6 +38,7 @@ const NAV: Record<
       items: [
         { title: "Dashboard", url: "/app/admin", icon: LayoutDashboard },
         { title: "Live Tracking", url: "/app/tracking", icon: MapPin },
+        { title: "AI Analytics", url: "/app/analytics", icon: Activity },
       ],
     },
     {

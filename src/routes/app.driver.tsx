@@ -2,7 +2,7 @@ import { supabase } from "@/lib/supabase";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { MapPin, AlertTriangle, Phone } from "lucide-react";
-import { FleetMap } from "@/components/FleetMap";
+
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -36,7 +36,16 @@ import { toast } from "sonner";
 import { addReport, useReports, timeAgo } from "@/lib/reports";
 import { addNotification } from "@/lib/notifications";
 
+import { getSession } from "@/lib/auth";
+import { redirect } from "@tanstack/react-router";
+
 export const Route = createFileRoute("/app/driver")({
+  beforeLoad: async () => {
+    const session = await getSession();
+    if (!session || session.role !== "driver") {
+      throw redirect({ to: "/login" });
+    }
+  },
   head: () => ({ meta: [{ title: "Driver Dashboard — Blue Horizon" }] }),
   component: DriverDashboard,
 });
@@ -49,6 +58,7 @@ function DriverDashboard() {
   const [isGpsActive, setIsGpsActive] = useState(false);
   const [isSosCooldown, setIsSosCooldown] = useState(false);
   const [isSosModalOpen, setIsSosModalOpen] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   useEffect(() => {
     let watchId: string | undefined;
@@ -131,27 +141,59 @@ function DriverDashboard() {
     return () => { channel.unsubscribe(); };
   }, []);
 
-  const pendingCount = students.filter((s) => s.status !== "dropped").length;
+  const onboardCount = students.filter((s) => s.status === "picked").length;
   const filtered = students.filter((s) =>
     s.name.toLowerCase().includes(q.toLowerCase())
   );
 
+  const markPresent = async (student: Student) => {
+    setStudents(prev => prev.map(s => s.id === student.id ? { ...s, status: "picked" } : s));
+    supabase.from("students").update({ status: "picked", last_updated: new Date().toISOString() }).eq("id", student.id).then();
+    toast.success(`${student.name} marked present!`);
+  };
+
+  const markAbsent = async (student: Student) => {
+    setStudents(prev => prev.map(s => s.id === student.id ? { ...s, status: "absent" } : s));
+    supabase.from("students").update({ status: "absent", last_updated: new Date().toISOString() }).eq("id", student.id).then();
+    toast.info(`${student.name} marked absent.`);
+  };
+
   const markDropped = async (student: Student) => {
     if (student.status === "dropped") return;
     
-    // 1. Update Student status
-    await supabase
-      .from("students")
-      .update({ status: "dropped", last_updated: new Date().toISOString() })
-      .eq("id", student.id);
+    // Update local state first for immediate UI feedback
+    setStudents(prev => prev.map(s => s.id === student.id ? { ...s, status: "dropped" } : s));
 
-    // 2. Insert Drop Log
-    await supabase.from("drop_logs").insert({
-      student_id: student.id,
-      bus_id: "007",
-      status: "dropped",
-      location_name: student.drop_address
-    });
+    try {
+      if (!navigator.onLine) {
+        const { addPendingAction } = await import("@/lib/offline-sync");
+        addPendingAction("MARK_DROP", {
+          student_id: student.id,
+          drop_log: {
+            student_id: student.id,
+            bus_id: "007",
+            status: "dropped",
+            location_name: student.drop_address
+          }
+        });
+        toast.warning(`Offline: ${student.name} drop queued for sync`);
+      } else {
+        await supabase
+          .from("students")
+          .update({ status: "dropped", last_updated: new Date().toISOString() })
+          .eq("id", student.id);
+
+        await supabase.from("drop_logs").insert({
+          student_id: student.id,
+          bus_id: "007",
+          status: "dropped",
+          location_name: student.drop_address
+        });
+      }
+    } catch (e) {
+      console.error("Failed to mark drop", e);
+      toast.error("Failed to drop student");
+    }
 
     // 3. Send Notification to Parent
     addNotification(
@@ -163,6 +205,31 @@ function DriverDashboard() {
     
     toast.success(`${student.name} marked as dropped!`);
   };
+
+  const handleScan = (decodedText: string) => {
+    setIsScannerOpen(false);
+    
+    // Try to find student by ID or Roll No
+    const student = students.find(s => s.id.toString() === decodedText || s.student_roll_no === decodedText);
+    
+    if (student) {
+      if (student.status === "dropped") {
+        toast.info(`${student.name} is already dropped off.`);
+      } else if (student.status === "picked") {
+        markDropped(student);
+      } else {
+        // Mark picked
+        setStudents(prev => prev.map(s => s.id === student.id ? { ...s, status: "picked" } : s));
+        supabase.from("students").update({ status: "picked" }).eq("id", student.id).then();
+        toast.success(`${student.name} marked as picked up!`);
+      }
+    } else {
+      toast.error("Student not found in this bus.");
+    }
+  };
+
+  // We removed html5-qrcode completely to prevent SSR and hook crashes.
+  // Instead, the scanning will be simulated using a simple input below.
 
   const submitReport = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -207,14 +274,43 @@ function DriverDashboard() {
           </p>
         </div>
         <div className="relative flex items-center gap-2">
-          {isGpsActive && (
-            <Badge
+          {isGpsActive &&              <Badge
               variant="outline"
               className="border-success/50 text-success bg-success/10 py-1.5 hidden sm:flex items-center gap-1"
             >
               <MapPin className="h-3 w-3" /> Live GPS Active
             </Badge>
-          )}
+          }
+
+          <Dialog open={isScannerOpen} onOpenChange={setIsScannerOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="border-primary bg-primary text-primary-foreground hover:bg-primary/90 hidden sm:flex">
+                <Search className="mr-2 h-4 w-4" /> Scan ID
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md flex flex-col items-center">
+              <DialogHeader>
+                <DialogTitle>Scan Student E-Pass</DialogTitle>
+                <DialogDescription className="text-center">
+                  Align the QR code within the frame to automatically check in or drop off the student.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="w-full flex flex-col gap-4 mt-2">
+                <p className="text-sm text-muted-foreground text-center">Camera scanning disabled in demo. Enter student Roll No manually:</p>
+                <form 
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const val = (e.currentTarget.elements.namedItem("scanInput") as HTMLInputElement).value;
+                    if (val) handleScan(val);
+                  }}
+                  className="flex gap-2"
+                >
+                  <Input name="scanInput" placeholder="e.g. S123" />
+                  <Button type="submit">Check In</Button>
+                </form>
+              </div>
+            </DialogContent>
+          </Dialog>
 
           <Dialog open={isSosModalOpen} onOpenChange={setIsSosModalOpen}>
             <DialogTrigger asChild>
@@ -315,18 +411,13 @@ function DriverDashboard() {
         </div>
       </div>
 
-      <Card className="p-5">
-        <h2 className="text-lg font-semibold mb-3">Live Navigation</h2>
-        <div className="w-full overflow-hidden rounded-xl h-[300px]">
-          <FleetMap buses={[]} />
-        </div>
-      </Card>
+
 
       <div className="grid gap-4 sm:grid-cols-3">
         {[
           { label: "BUS NO", value: "007" },
           { label: "ROUTE", value: "OMR Express" },
-          { label: "ONBOARD", value: pendingCount },
+          { label: "ONBOARD", value: onboardCount },
         ].map((s, i) => (
           <Card
             key={s.label}
@@ -379,7 +470,11 @@ function DriverDashboard() {
                     </Badge>
                   ) : s.status === "picked" ? (
                     <Badge className="bg-primary text-primary-foreground">
-                      Onboard
+                      Present
+                    </Badge>
+                  ) : s.status === "absent" ? (
+                    <Badge variant="destructive">
+                      Absent
                     </Badge>
                   ) : (
                     <Badge
@@ -402,14 +497,36 @@ function DriverDashboard() {
                         <Phone className="h-4 w-4" />
                       </a>
                     </Button>
-                    <Button
-                      size="sm"
-                      variant={s.status === "dropped" ? "outline" : "default"}
-                      disabled={s.status === "dropped"}
-                      onClick={() => markDropped(s)}
-                    >
-                      {s.status === "dropped" ? "Dropped" : "Mark Drop"}
-                    </Button>
+                    {s.status === "pending" && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-destructive border-destructive/50 hover:bg-destructive/10"
+                          onClick={() => markAbsent(s)}
+                        >
+                          Absent
+                        </Button>
+                        <Button size="sm" onClick={() => markPresent(s)}>
+                          Present
+                        </Button>
+                      </>
+                    )}
+                    {s.status === "absent" && (
+                      <Button size="sm" variant="outline" onClick={() => markPresent(s)}>
+                        Mark Present
+                      </Button>
+                    )}
+                    {s.status === "picked" && (
+                      <Button size="sm" variant="default" onClick={() => markDropped(s)}>
+                        Drop Off
+                      </Button>
+                    )}
+                    {s.status === "dropped" && (
+                      <Button size="sm" variant="outline" disabled>
+                        Dropped
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

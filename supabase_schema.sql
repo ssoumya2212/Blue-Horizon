@@ -19,9 +19,9 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 -- Profiles Policies
-CREATE POLICY "Public profiles are viewable by everyone."
+CREATE POLICY "Profiles are viewable by authenticated users."
     ON public.profiles FOR SELECT
-    USING ( true );
+    USING ( auth.role() = 'authenticated' );
 
 CREATE POLICY "Users can insert their own profile."
     ON public.profiles FOR INSERT
@@ -42,6 +42,11 @@ BEGIN
     END IF;
 END $$;
 
+-- Enable RLS for students if not already enabled
+ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Students viewable by authenticated users." ON public.students FOR SELECT USING ( auth.role() = 'authenticated' );
+CREATE POLICY "Admins can manage students." ON public.students FOR ALL USING ( auth.uid() IN (SELECT id FROM public.profiles WHERE role = 'admin') );
+
 -- 3. Ensure drop_logs table exists
 CREATE TABLE IF NOT EXISTS public.drop_logs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -56,13 +61,13 @@ CREATE TABLE IF NOT EXISTS public.drop_logs (
 ALTER TABLE public.drop_logs ENABLE ROW LEVEL SECURITY;
 
 -- Drop Logs Policies
-CREATE POLICY "Drop logs are viewable by everyone."
+CREATE POLICY "Drop logs viewable by authenticated users."
     ON public.drop_logs FOR SELECT
-    USING ( true );
+    USING ( auth.role() = 'authenticated' );
 
 CREATE POLICY "Drivers can insert drop logs."
     ON public.drop_logs FOR INSERT
-    WITH CHECK ( true ); -- You can restrict this to auth.uid() matching a driver profile
+    WITH CHECK ( auth.uid() IN (SELECT id FROM public.profiles WHERE role = 'driver') );
 
 -- 4. Create ROUTES table
 CREATE TABLE IF NOT EXISTS public.routes (
@@ -73,8 +78,8 @@ CREATE TABLE IF NOT EXISTS public.routes (
 );
 
 ALTER TABLE public.routes ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Routes viewable by everyone." ON public.routes FOR SELECT USING (true);
-CREATE POLICY "Admins can insert routes." ON public.routes FOR INSERT WITH CHECK (true);
+CREATE POLICY "Routes viewable by authenticated users." ON public.routes FOR SELECT USING ( auth.role() = 'authenticated' );
+CREATE POLICY "Admins can insert routes." ON public.routes FOR INSERT WITH CHECK ( auth.uid() IN (SELECT id FROM public.profiles WHERE role = 'admin') );
 
 -- 5. Create BUSES table
 CREATE TABLE IF NOT EXISTS public.buses (
@@ -87,7 +92,7 @@ CREATE TABLE IF NOT EXISTS public.buses (
 );
 
 ALTER TABLE public.buses ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Buses viewable by everyone." ON public.buses FOR SELECT USING (true);
+CREATE POLICY "Buses viewable by authenticated users." ON public.buses FOR SELECT USING ( auth.role() = 'authenticated' );
 
 -- 6. Add relationships to STUDENTS table
 DO $$
@@ -123,18 +128,93 @@ CREATE TABLE IF NOT EXISTS public.app_releases (
 
 ALTER TABLE public.app_releases ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "App releases are viewable by everyone."
+CREATE POLICY "App releases viewable by authenticated users."
     ON public.app_releases FOR SELECT
-    USING ( true );
+    USING ( auth.role() = 'authenticated' );
 
 CREATE POLICY "Admins can insert app releases."
     ON public.app_releases FOR INSERT
-    WITH CHECK ( true ); -- You can restrict this to role='admin' in application logic or RLS
+    WITH CHECK ( auth.uid() IN (SELECT id FROM public.profiles WHERE role = 'admin') );
 
 CREATE POLICY "Admins can update app releases."
     ON public.app_releases FOR UPDATE
-    USING ( true );
+    USING ( auth.uid() IN (SELECT id FROM public.profiles WHERE role = 'admin') );
 
 CREATE POLICY "Admins can delete app releases."
     ON public.app_releases FOR DELETE
-    USING ( true );
+    USING ( auth.uid() IN (SELECT id FROM public.profiles WHERE role = 'admin') );
+
+-- 9. Create AUDIT_LOGS table
+CREATE TABLE IF NOT EXISTS public.audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    admin_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    action TEXT NOT NULL,
+    entity_type TEXT NOT NULL,
+    entity_id TEXT,
+    details JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Admins can view audit logs." ON public.audit_logs FOR SELECT USING ( auth.uid() IN (SELECT id FROM public.profiles WHERE role = 'admin') );
+CREATE POLICY "Admins can insert audit logs." ON public.audit_logs FOR INSERT WITH CHECK ( auth.uid() IN (SELECT id FROM public.profiles WHERE role = 'admin') );
+
+-- 10. Create BUS_LOCATIONS table
+CREATE TABLE IF NOT EXISTS public.bus_locations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    bus_id TEXT REFERENCES public.buses(id) ON DELETE CASCADE,
+    latitude DECIMAL NOT NULL,
+    longitude DECIMAL NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.bus_locations ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Bus locations viewable by authenticated users." ON public.bus_locations FOR SELECT USING ( auth.role() = 'authenticated' );
+CREATE POLICY "Drivers can update bus locations." ON public.bus_locations FOR ALL USING ( auth.uid() IN (SELECT id FROM public.profiles WHERE role = 'driver') );
+
+-- 11. Create NOTIFICATIONS table
+CREATE TABLE IF NOT EXISTS public.notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    type TEXT NOT NULL,
+    user_role TEXT DEFAULT 'all',
+    read BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Notifications viewable by authenticated users." ON public.notifications FOR SELECT USING ( auth.role() = 'authenticated' );
+CREATE POLICY "Admins can insert notifications." ON public.notifications FOR INSERT WITH CHECK ( auth.uid() IN (SELECT id FROM public.profiles WHERE role = 'admin') );
+CREATE POLICY "Parents can insert messages to drivers." ON public.notifications FOR INSERT WITH CHECK ( auth.uid() IN (SELECT id FROM public.profiles WHERE role = 'parent') );
+CREATE POLICY "Users can mark notifications read." ON public.notifications FOR UPDATE USING ( auth.role() = 'authenticated' );
+
+-- 12. Create USER_SETTINGS table
+CREATE TABLE IF NOT EXISTS public.user_settings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
+    settings JSONB NOT NULL DEFAULT '{}'::jsonb,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.user_settings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view own settings." ON public.user_settings FOR SELECT USING ( auth.uid() = user_id );
+CREATE POLICY "Users can update own settings." ON public.user_settings FOR ALL USING ( auth.uid() = user_id );
+
+-- 13. Create PASSENGERS table (Aligns with src/services/passengers.ts)
+CREATE TABLE IF NOT EXISTS public.passengers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    route_id UUID REFERENCES public.routes(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.passengers ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Passengers viewable by authenticated users." ON public.passengers FOR SELECT USING ( auth.role() = 'authenticated' );
+CREATE POLICY "Admins can manage passengers." ON public.passengers FOR ALL USING ( auth.uid() IN (SELECT id FROM public.profiles WHERE role = 'admin') );
+
+-- 14. Enable Realtime for new tables
+alter publication supabase_realtime add table bus_locations;
+alter publication supabase_realtime add table notifications;
+alter publication supabase_realtime add table user_settings;
+alter publication supabase_realtime add table passengers;

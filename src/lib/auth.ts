@@ -1,26 +1,36 @@
-// Mock auth — replace with Firebase / Lovable Cloud later
+import { supabase } from "./supabase";
+
 export type Role = "parent" | "driver" | "admin";
 
-export type Session = { username: string; role: Role } | null;
+export type Session = { username: string; role: Role; id: string } | null;
 
-const KEY = "bh_session";
-
-export function getSession(): Session {
+export async function getSession(): Promise<Session> {
   if (typeof window === "undefined") return null;
   try {
-    const raw = localStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as Session) : null;
-  } catch {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return null;
+    
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role, full_name")
+      .eq("id", session.user.id)
+      .single();
+      
+    if (!profile) return null;
+    
+    return {
+      id: session.user.id,
+      username: profile.full_name || session.user?.email || "User",
+      role: profile.role as Role
+    };
+  } catch (err) {
+    console.error("Auth error:", err);
     return null;
   }
 }
 
-export function signIn(username: string, role: Role) {
-  localStorage.setItem(KEY, JSON.stringify({ username, role }));
-}
-
-export function signOut() {
-  localStorage.removeItem(KEY);
+export async function signOut() {
+  await supabase.auth.signOut({ scope: "global" });
 }
 
 export function homeFor(role: Role) {

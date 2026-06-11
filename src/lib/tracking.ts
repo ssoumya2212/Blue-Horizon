@@ -5,81 +5,61 @@ export type BusPosition = {
   id: string;
   route: string;
   driver: string;
-  status: "On Route" | "Delay" | "Idle";
+  status: "Running" | "Delayed" | "Idle";
   eta: string;
   lat: number;
   lng: number;
 };
 
-// Default seed coordinates (Chennai) used only as fallback if no live location exists
-const seed: BusPosition[] = [
-  {
-    id: "007",
-    route: "Route A",
-    driver: "Ravi S.",
-    status: "On Route",
-    eta: "3:30 PM",
-    lat: 13.0855,
-    lng: 80.2035,
-  },
-  {
-    id: "012",
-    route: "Route B",
-    driver: "Sahil K.",
-    status: "Delay",
-    eta: "3:42 PM",
-    lat: 13.0890,
-    lng: 80.2000,
-  },
-  {
-    id: "018",
-    route: "Route C",
-    driver: "Rita J.",
-    status: "On Route",
-    eta: "3:51 PM",
-    lat: 13.0820,
-    lng: 80.2050,
-  },
-  {
-    id: "021",
-    route: "Route D",
-    driver: "Vikas P.",
-    status: "Idle",
-    eta: "—",
-    lat: 13.0850,
-    lng: 80.2030,
-  },
-];
-
-let positions: BusPosition[] = [...seed];
+let positions: BusPosition[] = [];
 const listeners = new Set<(p: BusPosition[]) => void>();
 
 function emit() {
   listeners.forEach((l) => l([...positions]));
 }
 
-function startSupabaseTracking() {
-  // Fetch initial locations
-  supabase
-    .from("bus_locations")
-    .select("*")
-    .then(({ data }) => {
-      if (data) {
-        let updated = false;
-        data.forEach((loc) => {
-          const idx = positions.findIndex((p) => p.id === loc.bus_id);
-          if (idx !== -1) {
-            positions[idx] = {
-              ...positions[idx],
-              lat: Number(loc.latitude),
-              lng: Number(loc.longitude),
-            };
-            updated = true;
-          }
-        });
-        if (updated) emit();
-      }
-    });
+function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371; // Radius of the earth in km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);  
+  const dLon = (lon2 - lon1) * (Math.PI / 180); 
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2)
+    ; 
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+  return R * c; 
+}
+
+const notifiedBuses = new Set<string>();
+
+async function startSupabaseTracking() {
+  // First, fetch the buses to get route and driver info
+  const { data: buses } = await supabase.from("buses").select("*");
+  if (!buses) return;
+  
+  // Then fetch current locations
+  const { data: locations } = await supabase.from("bus_locations").select("*");
+  
+  const newPositions: BusPosition[] = [];
+  
+  for (const bus of buses) {
+    const loc = locations?.find(l => l.bus_id === bus.id);
+    if (loc) {
+      newPositions.push({
+        id: bus.id,
+        route: bus.route_name || "Unknown Route",
+        driver: bus.driver_name || "Unknown Driver",
+        status: bus.status === "Running" ? "Running" : (bus.status === "Delayed" ? "Delayed" : "Idle"),
+        eta: bus.next_stop || "—",
+        lat: Number(loc.latitude),
+        lng: Number(loc.longitude)
+      });
+    }
+  }
+  
+  positions = newPositions;
+  emit();
 
   // Subscribe to changes
   supabase
@@ -87,9 +67,19 @@ function startSupabaseTracking() {
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "bus_locations" },
-      (payload) => {
+      async (payload) => {
         const newLoc = payload.new as any;
         if (newLoc && newLoc.bus_id) {
+          
+          // Geofence check (1km from Blue Horizon Int. School: 13.0850, 80.2030)
+          const dist = getDistanceFromLatLonInKm(Number(newLoc.latitude), Number(newLoc.longitude), 13.0850, 80.2030);
+          if (dist < 1.0 && !notifiedBuses.has(newLoc.bus_id)) {
+            notifiedBuses.add(newLoc.bus_id);
+            // Send push notification to parents
+            const { addNotification } = await import("@/lib/notifications");
+            addNotification("Bus Arriving Soon", `Bus ${newLoc.bus_id} is within 1km of the stop!`, "bus_arrival", "parent");
+          }
+
           const idx = positions.findIndex((p) => p.id === newLoc.bus_id);
           if (idx !== -1) {
             positions[idx] = {
@@ -98,11 +88,38 @@ function startSupabaseTracking() {
               lng: Number(newLoc.longitude),
             };
             emit();
+          } else {
+            // New bus location appeared, fetch bus details
+            const { data: bus } = await supabase.from("buses").select("*").eq("id", newLoc.bus_id).single();
+            if (bus) {
+              positions.push({
+                id: bus.id,
+                route: bus.route_name || "Unknown Route",
+                driver: bus.driver_name || "Unknown Driver",
+                status: bus.status === "Running" ? "Running" : (bus.status === "Delayed" ? "Delayed" : "Idle"),
+                eta: bus.next_stop || "—",
+                lat: Number(newLoc.latitude),
+                lng: Number(newLoc.longitude)
+              });
+              emit();
+            }
           }
         }
       },
     )
-    .subscribe();
+    .subscribe((status, err) => {
+      if (status === "SUBSCRIBED") {
+        console.log("Subscribed to bus locations realtime");
+      }
+      if (status === "CHANNEL_ERROR" || err) {
+        console.error("Realtime channel error:", err);
+        // Simple retry mechanism
+        setTimeout(() => {
+          supabase.removeChannel(supabase.channel("tracking_bus_locations"));
+          startSupabaseTracking();
+        }, 5000);
+      }
+    });
 }
 
 let started = false;

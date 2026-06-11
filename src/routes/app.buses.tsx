@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,52 +13,42 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useSearchQuery } from "@/lib/search";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/app/buses")({
   head: () => ({ meta: [{ title: "Buses — Blue Horizon" }] }),
   component: Buses,
 });
 
-const buses = [
-  {
-    id: "007",
-    route: "Route A",
-    driver: "Ravi S.",
-    capacity: 24,
-    status: "Active",
-  },
-  {
-    id: "012",
-    route: "Route B",
-    driver: "Sahil K.",
-    capacity: 28,
-    status: "Active",
-  },
-  {
-    id: "018",
-    route: "Route C",
-    driver: "Rita J.",
-    capacity: 22,
-    status: "Maintenance",
-  },
-  {
-    id: "021",
-    route: "Route D",
-    driver: "Vikas P.",
-    capacity: 30,
-    status: "Idle",
-  },
-];
+type BusData = {
+  id: string;
+  route_name: string;
+  driver_name: string;
+  capacity: number;
+  status: string;
+};
 
 function Buses() {
+  const [buses, setBuses] = useState<BusData[]>([]);
+  
+  useEffect(() => {
+    const load = async () => {
+      const { data } = await supabase.from("buses").select("*");
+      if (data) setBuses(data);
+    };
+    load();
+    const sub = supabase.channel("buses_channel").on("postgres_changes", { event: "*", schema: "public", table: "buses" }, load).subscribe();
+    return () => { sub.unsubscribe(); };
+  }, []);
+
   const q = useSearchQuery().toLowerCase();
   const filtered = q
     ? buses.filter(
         (b) =>
           b.id.toLowerCase().includes(q) ||
-          b.route.toLowerCase().includes(q) ||
-          b.driver.toLowerCase().includes(q) ||
-          b.status.toLowerCase().includes(q),
+          b.route_name?.toLowerCase().includes(q) ||
+          b.driver_name?.toLowerCase().includes(q) ||
+          b.status?.toLowerCase().includes(q),
       )
     : buses;
   return (
@@ -88,16 +79,16 @@ function Buses() {
             {filtered.map((b) => (
               <TableRow key={b.id}>
                 <TableCell className="font-medium">Bus {b.id}</TableCell>
-                <TableCell>{b.route}</TableCell>
-                <TableCell>{b.driver}</TableCell>
+                <TableCell>{b.route_name}</TableCell>
+                <TableCell>{b.driver_name}</TableCell>
                 <TableCell>{b.capacity}</TableCell>
                 <TableCell className="text-right">
                   <Badge
                     variant="outline"
                     className={
-                      b.status === "Active"
+                      b.status === "Active" || b.status === "Running"
                         ? "border-success/30 bg-success/10 text-success"
-                        : b.status === "Maintenance"
+                        : b.status === "Delayed"
                           ? "border-amber-300 bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400"
                           : "border-border text-muted-foreground"
                     }

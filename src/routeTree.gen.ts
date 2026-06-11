@@ -29,6 +29,7 @@ import { Route as AppEmergencyRouteImport } from './routes/app.emergency'
 import { Route as AppDriversRouteImport } from './routes/app.drivers'
 import { Route as AppDriverRouteImport } from './routes/app.driver'
 import { Route as AppBusesRouteImport } from './routes/app.buses'
+import { Route as AppAnalyticsRouteImport } from './routes/app.analytics'
 import { Route as AppAdminRouteImport } from './routes/app.admin'
 
 const TermsRoute = TermsRouteImport.update({
@@ -131,6 +132,11 @@ const AppBusesRoute = AppBusesRouteImport.update({
   path: '/buses',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAnalyticsRoute = AppAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAdminRoute = AppAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -148,6 +154,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/app/admin': typeof AppAdminRoute
+  '/app/analytics': typeof AppAnalyticsRoute
   '/app/buses': typeof AppBusesRoute
   '/app/driver': typeof AppDriverRoute
   '/app/drivers': typeof AppDriversRoute
@@ -171,6 +178,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/app/admin': typeof AppAdminRoute
+  '/app/analytics': typeof AppAnalyticsRoute
   '/app/buses': typeof AppBusesRoute
   '/app/driver': typeof AppDriverRoute
   '/app/drivers': typeof AppDriversRoute
@@ -195,6 +203,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
   '/app/admin': typeof AppAdminRoute
+  '/app/analytics': typeof AppAnalyticsRoute
   '/app/buses': typeof AppBusesRoute
   '/app/driver': typeof AppDriverRoute
   '/app/drivers': typeof AppDriversRoute
@@ -220,6 +229,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/app/admin'
+    | '/app/analytics'
     | '/app/buses'
     | '/app/driver'
     | '/app/drivers'
@@ -243,6 +253,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/app/admin'
+    | '/app/analytics'
     | '/app/buses'
     | '/app/driver'
     | '/app/drivers'
@@ -266,6 +277,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/terms'
     | '/app/admin'
+    | '/app/analytics'
     | '/app/buses'
     | '/app/driver'
     | '/app/drivers'
@@ -433,6 +445,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppBusesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/analytics': {
+      id: '/app/analytics'
+      path: '/analytics'
+      fullPath: '/app/analytics'
+      preLoaderRoute: typeof AppAnalyticsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/admin': {
       id: '/app/admin'
       path: '/admin'
@@ -445,6 +464,7 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppAdminRoute: typeof AppAdminRoute
+  AppAnalyticsRoute: typeof AppAnalyticsRoute
   AppBusesRoute: typeof AppBusesRoute
   AppDriverRoute: typeof AppDriverRoute
   AppDriversRoute: typeof AppDriversRoute
@@ -460,6 +480,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppAdminRoute: AppAdminRoute,
+  AppAnalyticsRoute: AppAnalyticsRoute,
   AppBusesRoute: AppBusesRoute,
   AppDriverRoute: AppDriverRoute,
   AppDriversRoute: AppDriversRoute,

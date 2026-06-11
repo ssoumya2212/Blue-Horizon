@@ -5,7 +5,14 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { TopNavbar } from "@/components/TopNavbar";
 import { getSession, type Session } from "@/lib/auth";
 import { getPassengers } from "@/services/passengers";
+
 export const Route = createFileRoute("/app")({
+  beforeLoad: async () => {
+    const session = await getSession();
+    if (!session) {
+      throw Navigate({ to: "/login" }); // Need to use redirect but Tanstack Start might prefer redirect()
+    }
+  },
   component: AppLayout,
 });
 
@@ -21,10 +28,14 @@ function AppLayout() {
       console.log("SUPABASE DATA:", data);
     };
 
-    fetchData();
+    const initSession = async () => {
+      const sess = await getSession();
+      setSession(sess);
+      setLoaded(true);
+    };
 
-    setSession(getSession());
-    setLoaded(true);
+    fetchData();
+    initSession();
   }, []);
 
   if (!loaded) return <div className="min-h-screen bg-background" />;

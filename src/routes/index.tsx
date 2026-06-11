@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import {
   MapPin,
   Bus,
@@ -14,6 +14,11 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PublicNav } from "@/components/PublicNav";
 import { PublicFooter } from "@/components/PublicFooter";
+
+import { ThemeToggle } from "@/components/ThemeToggle";
+
+
+import { isNative } from "@/lib/platform";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -75,6 +80,10 @@ const features = [
 ];
 
 function LandingPage() {
+  if (isNative()) {
+    return <Navigate to="/login" replace />;
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <PublicNav />
@@ -113,27 +122,31 @@ function LandingPage() {
                 className="bg-white text-primary hover:bg-white/90"
               >
                 <Link to="/login">
-                  Login <ArrowRight className="ml-2 h-4 w-4" />
+                  Launch App <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
-              <Button
-                asChild
-                size="lg"
-                className="bg-emerald-500 text-white hover:bg-emerald-600"
-              >
-                <a href="/Blue-Horizon-App.apk" download>
-                  <Download className="mr-2 h-4 w-4" /> Android (.apk)
-                </a>
-              </Button>
-              <Button
-                asChild
-                size="lg"
-                className="bg-sky-500 text-white hover:bg-sky-600"
-              >
-                <a href="/Blue-Horizon-Setup.exe" download>
-                  <Download className="mr-2 h-4 w-4" /> Windows (.exe)
-                </a>
-              </Button>
+              {!isNative() && (
+                <>
+                  <Button
+                    asChild
+                    size="lg"
+                    className="bg-emerald-500 text-white hover:bg-emerald-600"
+                  >
+                    <a href="/Blue-Horizon-App.apk" download>
+                      <Download className="mr-2 h-4 w-4" /> Android (.apk)
+                    </a>
+                  </Button>
+                  <Button
+                    asChild
+                    size="lg"
+                    className="bg-sky-500 text-white hover:bg-sky-600"
+                  >
+                    <a href="https://github.com/ssoumya2212/Blue-Horizon/releases/latest/download/Blue.Horizon.Setup.1.0.0.exe" target="_blank" rel="noopener noreferrer">
+                      <Download className="mr-2 h-4 w-4" /> Windows (.exe)
+                    </a>
+                  </Button>
+                </>
+              )}
             </div>
 
             <div className="mt-10 grid grid-cols-3 gap-3">

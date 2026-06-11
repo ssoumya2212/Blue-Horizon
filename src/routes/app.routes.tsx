@@ -18,14 +18,25 @@ import { toast } from "sonner";
 import { addRoute, useRoutes } from "@/lib/routes";
 import { useSearchQuery } from "@/lib/search";
 
+import { getSession } from "@/lib/auth";
+import { redirect } from "@tanstack/react-router";
+
 const RouteMap = lazy(() => import("@/components/RouteMap"));
 
 export const Route = createFileRoute("/app/routes")({
+  beforeLoad: async () => {
+    const session = await getSession();
+    if (!session || (session.role !== "admin" && session.role !== "driver")) {
+      throw redirect({ to: "/login" });
+    }
+    return { role: session.role };
+  },
   head: () => ({ meta: [{ title: "Routes — Blue Horizon" }] }),
   component: Routes,
 });
 
 function Routes() {
+  const { role } = Route.useRouteContext();
   const routes = useRoutes();
   const q = useSearchQuery().toLowerCase();
   const [open, setOpen] = useState(false);
@@ -71,9 +82,11 @@ function Routes() {
               ` — ${filtered.length} match${filtered.length === 1 ? "" : "es"} for "${q}"`}
           </p>
         </div>
-        <Button onClick={() => setOpen(true)}>
-          <Plus className="mr-1 h-4 w-4" /> New route
-        </Button>
+        {role === "admin" && (
+          <Button onClick={() => setOpen(true)}>
+            <Plus className="mr-1 h-4 w-4" /> New route
+          </Button>
+        )}
       </div>
 
       {/* Interactive Map */}

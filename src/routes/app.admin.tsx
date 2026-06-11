@@ -36,7 +36,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+import { getSession } from "@/lib/auth";
+import { redirect } from "@tanstack/react-router";
+
 export const Route = createFileRoute("/app/admin")({
+  beforeLoad: async () => {
+    const session = await getSession();
+    if (!session || session.role !== "admin") {
+      throw redirect({ to: "/login" });
+    }
+  },
   head: () => ({ meta: [{ title: "Admin Dashboard — Blue Horizon" }] }),
   component: AdminDashboard,
 });

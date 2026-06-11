@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { Download, Monitor, Smartphone, Globe, Info } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,12 +6,24 @@ import { PublicNav } from "@/components/PublicNav";
 import { PublicFooter } from "@/components/PublicFooter";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { isNative } from "@/lib/platform";
+import { DownloadWindowsButton } from "@/components/DownloadWindowsButton";
 
 export const Route = createFileRoute("/downloads")({
+  head: () => ({
+    meta: [
+      { title: "Download Blue Horizon" },
+      { name: "description", content: "Get the Blue Horizon app for Android, Windows, or Web." },
+    ],
+  }),
   component: DownloadsPage,
 });
 
 function DownloadsPage() {
+  if (isNative()) {
+    return <Navigate to="/login" replace />;
+  }
+
   const { data: releases, isLoading } = useQuery({
     queryKey: ["app-releases-latest"],
     queryFn: async () => {
@@ -88,7 +100,7 @@ function DownloadsPage() {
                 size="lg" 
                 className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
               >
-                <a href={androidRelease?.file_url || "/Blue-Horizon-App.apk"} download>
+                <a href={androidRelease?.file_url || "/Blue-Horizon-Android.apk"} download>
                   <Download className="mr-2 h-5 w-5" /> Download APK
                 </a>
               </Button>
@@ -135,15 +147,7 @@ function DownloadsPage() {
                 )}
               </div>
               
-              <Button 
-                asChild 
-                size="lg" 
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                <a href={windowsRelease?.file_url || "/Blue-Horizon-Setup.exe"} download>
-                  <Download className="mr-2 h-5 w-5" /> Download EXE
-                </a>
-              </Button>
+              <DownloadWindowsButton className="w-full bg-blue-600 hover:bg-blue-700 text-white" />
             </div>
           </Card>
 

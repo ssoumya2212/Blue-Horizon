@@ -5,12 +5,16 @@ import { Logo } from "./Logo";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./ThemeToggle";
 
-const links = [
+import { isNative } from "@/lib/platform";
+
+const allLinks = [
   { to: "/", label: "Home" },
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
   { to: "/downloads", label: "Downloads" },
 ];
+
+const links = allLinks.filter(l => !(isNative() && l.to === "/downloads"));
 
 export function PublicNav() {
   const [open, setOpen] = useState(false);

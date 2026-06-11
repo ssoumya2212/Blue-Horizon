@@ -13,7 +13,9 @@ import {
   Settings as SettingsIcon,
   MessageSquare,
   Send,
+  QrCode,
 } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { FleetMap } from "@/components/FleetMap";
 import { useFleetPositions } from "@/lib/tracking";
 import { supabase } from "@/lib/supabase";
@@ -28,7 +30,16 @@ import {
   type AppNotification,
 } from "@/lib/notifications";
 
+import { getSession } from "@/lib/auth";
+import { redirect } from "@tanstack/react-router";
+
 export const Route = createFileRoute("/app/parent")({
+  beforeLoad: async () => {
+    const session = await getSession();
+    if (!session || session.role !== "parent") {
+      throw redirect({ to: "/login" });
+    }
+  },
   head: () => ({ meta: [{ title: "Parent Dashboard — Blue Horizon" }] }),
   component: ParentDashboard,
 });
@@ -190,6 +201,25 @@ function ParentDashboard() {
             >
               <Clock className="mr-1 h-3 w-3" /> 4:15 PM ETA
             </Badge>
+
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="bg-white/20 hover:bg-white/30 text-white border-white/40 h-6 text-xs px-2">
+                  <QrCode className="mr-1 h-3 w-3" /> ID Pass
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-xs flex flex-col items-center p-6">
+                <DialogHeader>
+                  <DialogTitle className="text-center">Student E-Pass</DialogTitle>
+                </DialogHeader>
+                <div className="bg-white p-4 rounded-xl shadow-inner my-4">
+                  <QRCodeSVG value={student?.id || "demo-id-123"} size={200} level="H" includeMargin />
+                </div>
+                <p className="text-sm font-medium">{student?.name}</p>
+                <p className="text-xs text-muted-foreground">{student?.student_roll_no}</p>
+              </DialogContent>
+            </Dialog>
+
           </div>
         </div>
       </Card>
