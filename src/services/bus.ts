@@ -14,7 +14,22 @@ export const getBuses = async () => {
 export const addBus = async (bus: any) => {
   // Extract route ID if we have a match
   let routeId = bus.route_id || null;
-  if (bus.route && !routeId) {
+  let routeName = bus.route || bus.route_name || "Unassigned";
+
+  if (routeId && routeName === "Unassigned") {
+    try {
+      const { data: routeData } = await supabase
+        .from("routes")
+        .select("name")
+        .eq("id", routeId)
+        .single();
+      if (routeData && routeData.name) {
+        routeName = routeData.name;
+      }
+    } catch (e) {
+      console.error("Error looking up route name:", e);
+    }
+  } else if (bus.route && !routeId) {
     const { data: routeData } = await supabase
       .from("routes")
       .select("id")
@@ -29,7 +44,7 @@ export const addBus = async (bus: any) => {
     id:
       bus.id || bus.busNumber || String(Math.floor(100 + Math.random() * 900)),
     route_id: routeId,
-    route_name: bus.route || bus.route_name || "Unassigned",
+    route_name: routeName,
     driver_id: bus.driver_id || null,
     driver_name: bus.driver_name || "Unassigned",
     capacity: Number(bus.capacity || 40),

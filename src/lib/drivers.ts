@@ -20,6 +20,8 @@ export type Driver = {
   status: DriverStatus;
   route: string;
   bus_id: string;
+  blood_group?: string;
+  medical_certificate_url?: string;
 };
 
 // Internal list to serve as initial value if needed
@@ -36,10 +38,14 @@ export async function fetchDriversList(): Promise<Driver[]> {
     if (error) throw error;
 
     const { data: buses } = await supabase.from("buses").select("*");
+    
+    // Fetch detailed driver info
+    const { data: driversData } = await supabase.from("drivers").select("*");
 
     const mapped = (profiles || []).map((p) => {
       // Find a bus assigned to this driver
       const bus = buses?.find((b) => b.driver_id === p.id || b.id === p.bus_id);
+      const drv = driversData?.find((d) => d.id === p.id);
       return {
         id: p.id,
         name: p.full_name,
@@ -49,6 +55,8 @@ export async function fetchDriversList(): Promise<Driver[]> {
         status: (p.status || "approved") as DriverStatus,
         route: bus ? bus.route_name || `Bus ${bus.id} Route` : "Unassigned",
         bus_id: bus ? bus.id : p.bus_id || "",
+        blood_group: drv ? drv.blood_group || "" : "",
+        medical_certificate_url: drv ? drv.medical_certificate_url || "" : "",
       };
     });
 
@@ -118,6 +126,8 @@ export async function addDriver(data: {
   address?: string;
   emergencyContact?: string;
   routeId?: string;
+  bloodGroup?: string;
+  medicalCertificateUrl?: string;
 }) {
   const res = await adminAddDriver({
     fullName: data.name,
@@ -131,6 +141,8 @@ export async function addDriver(data: {
     emergencyContact: data.emergencyContact,
     busId: data.bus_id,
     routeId: data.routeId,
+    bloodGroup: data.bloodGroup,
+    medicalCertificateUrl: data.medicalCertificateUrl,
   });
 
   if (!res.success) {

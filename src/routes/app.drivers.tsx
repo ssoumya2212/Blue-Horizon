@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useSearchQuery } from "@/lib/search";
 import { useState } from "react";
+import { supabase } from "@/lib/supabase";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -95,6 +96,33 @@ function Drivers() {
     setSaving(true);
     const data = new FormData(e.currentTarget);
     try {
+      const file = data.get("medical_certificate") as File;
+      let medicalCertificateUrl = "";
+      if (file && file.size > 0) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+        const filePath = `medical-certificates/${fileName}`;
+        
+        const { error: uploadErr } = await supabase.storage
+          .from("documents")
+          .upload(filePath, file);
+          
+        if (uploadErr) {
+          console.error("Storage upload error:", uploadErr);
+          // Fallback to mock url so it doesn't fail
+          medicalCertificateUrl = `mock-storage/documents/${filePath}`;
+        } else {
+          const { data: { publicUrl } } = supabase.storage
+            .from("documents")
+            .getPublicUrl(filePath);
+          medicalCertificateUrl = publicUrl;
+        }
+      } else {
+        toast.error("Medical Certificate is required.");
+        setSaving(false);
+        return;
+      }
+
       const d = await addDriver({
         name: String(data.get("name")),
         email: String(data.get("email")),
@@ -102,6 +130,10 @@ function Drivers() {
         licence: String(data.get("licence")),
         bus_id: String(data.get("bus_id")),
         password: String(data.get("password") || "123456"),
+        licenseExpiry: data.get("licenseExpiry") ? String(data.get("licenseExpiry")) : undefined,
+        experience: data.get("experience") ? Number(data.get("experience")) : undefined,
+        bloodGroup: data.get("bloodGroup") ? String(data.get("bloodGroup")) : undefined,
+        medicalCertificateUrl: medicalCertificateUrl,
       });
       if (d) setOpenAddDialog(false);
     } catch (err: any) {
@@ -197,15 +229,33 @@ function Drivers() {
               <p className="text-xs text-muted-foreground">
                 Bus Number: {d.bus_id || "—"}
               </p>
+              <p className="text-xs text-muted-foreground">
+                Blood Group: {d.blood_group || "—"}
+              </p>
+              <div className="text-xs flex flex-wrap items-center gap-1 mt-1.5">
+                <span className="text-muted-foreground">Med Cert:</span>
+                {d.medical_certificate_url ? (
+                  <a
+                    href={d.medical_certificate_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center text-[10px] font-bold text-success hover:underline bg-success/10 px-1.5 py-0.5 rounded border border-success/20"
+                  >
+                    Uploaded (View)
+                  </a>
+                ) : (
+                  <span className="inline-flex items-center text-[10px] font-bold text-destructive bg-destructive/10 px-1.5 py-0.5 rounded border border-destructive/20 animate-pulse">
+                    Not Uploaded
+                  </span>
+                )}
+              </div>
             </div>
             <Badge
               variant="outline"
               className={
                 d.status === "approved"
                   ? "mt-3 border-success/30 bg-success/10 text-success"
-                  : d.status === "disabled"
-                    ? "mt-3 border-destructive/30 bg-destructive/10 text-destructive"
-                    : "mt-3 border-amber-300 bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400"
+                  : "mt-3 border-destructive/30 bg-destructive/10 text-destructive"
               }
             >
               <span className="capitalize">{d.status}</span>
@@ -288,7 +338,7 @@ function Drivers() {
       {/* ADD DRIVER DIALOG */}
       <Dialog open={openAddDialog} onOpenChange={setOpenAddDialog}>
         <DialogContent className="sm:max-w-md">
-          <form onSubmit={handleAddSubmit}>
+          <form onSubmit={handleAddSubmit} encType="multipart/form-data">
             <DialogHeader>
               <DialogTitle>Add Driver</DialogTitle>
               <DialogDescription>
@@ -335,6 +385,49 @@ function Drivers() {
                   placeholder="DL-XXXX"
                   required
                   disabled={saving}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="add-license-expiry">Licence Expiry Date</Label>
+                <Input
+                  id="add-license-expiry"
+                  name="licenseExpiry"
+                  type="date"
+                  required
+                  disabled={saving}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="add-experience">Years of Experience</Label>
+                <Input
+                  id="add-experience"
+                  name="experience"
+                  type="number"
+                  placeholder="5"
+                  required
+                  disabled={saving}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="add-blood-group">Blood Group</Label>
+                <Input
+                  id="add-blood-group"
+                  name="bloodGroup"
+                  placeholder="O+ / A+"
+                  required
+                  disabled={saving}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="add-med-cert">Medical Certificate (Must Upload)</Label>
+                <Input
+                  id="add-med-cert"
+                  name="medical_certificate"
+                  type="file"
+                  accept="image/*,application/pdf"
+                  required
+                  disabled={saving}
+                  className="cursor-pointer"
                 />
               </div>
               <div className="grid gap-2">

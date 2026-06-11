@@ -377,6 +377,8 @@ export const adminAddDriver = createServerFn({ method: "POST" })
         emergencyContact?: string;
         busId?: string;
         routeId?: string;
+        bloodGroup?: string;
+        medicalCertificateUrl?: string;
       },
   )
   .handler(
@@ -393,6 +395,8 @@ export const adminAddDriver = createServerFn({ method: "POST" })
         emergencyContact,
         busId,
         routeId,
+        bloodGroup,
+        medicalCertificateUrl,
       },
     }) => {
       const supabaseAdmin = getSupabaseAdmin();
@@ -441,6 +445,8 @@ export const adminAddDriver = createServerFn({ method: "POST" })
             experience: experience || null,
             address: address || null,
             emergency_contact: emergencyContact || null,
+            blood_group: bloodGroup || null,
+            medical_certificate_url: medicalCertificateUrl || null,
           });
 
         if (driverError) throw driverError;

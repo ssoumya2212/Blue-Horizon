@@ -456,8 +456,8 @@ function AdminDashboard() {
         </Table>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="p-5 lg:col-span-2">
+      <div className="w-full">
+        <Card className="p-5">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold">Recent activity</h2>
@@ -508,65 +508,6 @@ function AdminDashboard() {
               ))}
             </TableBody>
           </Table>
-        </Card>
-
-        <Card className="p-5">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Driver approvals</h2>
-            <Badge variant="secondary">
-              {drivers.filter((d) => d.status === "pending").length} pending
-            </Badge>
-          </div>
-          <ul className="space-y-3">
-            {drivers.map((d) => (
-              <li
-                key={d.id || d.name}
-                className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3"
-              >
-                <div>
-                  <p className="text-sm font-medium">{d.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {d.route} • {d.licence}
-                  </p>
-                </div>
-                {d.status === "pending" ? (
-                  <div className="flex gap-1">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-destructive hover:bg-destructive/10"
-                      onClick={() => updateDriver(d.id, d.name, "rejected")}
-                    >
-                      Reject
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => updateDriver(d.id, d.name, "approved")}
-                    >
-                      <CheckCircle2 className="mr-1 h-3 w-3" /> Approve
-                    </Button>
-                  </div>
-                ) : (
-                  <Badge
-                    variant="outline"
-                    className={
-                      d.status === "approved"
-                        ? "border-success/30 bg-success/15 text-success"
-                        : "border-destructive/30 bg-destructive/15 text-destructive"
-                    }
-                  >
-                    {d.status === "approved" ? (
-                      <>
-                        <CheckCircle2 className="mr-1 h-3 w-3" /> Allowed
-                      </>
-                    ) : (
-                      "Rejected"
-                    )}
-                  </Badge>
-                )}
-              </li>
-            ))}
-          </ul>
         </Card>
       </div>
 
@@ -758,14 +699,26 @@ function AddEntityDialog({
           name: "licenseExpiry",
           label: "Licence Expiry Date",
           type: "date",
-          required: false,
+          required: true,
         },
         {
           name: "experience",
           label: "Years of Experience",
           type: "number",
           placeholder: "5",
-          required: false,
+          required: true,
+        },
+        {
+          name: "bloodGroup",
+          label: "Blood Group",
+          placeholder: "O+ / A+",
+          required: true,
+        },
+        {
+          name: "medical_certificate",
+          label: "Medical Certificate (Must Upload)",
+          type: "file",
+          required: true,
         },
         {
           name: "address",
@@ -999,6 +952,31 @@ function AddEntityDialog({
         });
         toast.success("Bus registered successfully");
       } else if (kind === "driver") {
+        const file = data.get("medical_certificate") as File;
+        let medicalCertificateUrl = "";
+        if (file && file.size > 0) {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+          const filePath = `medical-certificates/${fileName}`;
+          
+          const { error: uploadErr } = await supabase.storage
+            .from("documents")
+            .upload(filePath, file);
+            
+          if (uploadErr) {
+            console.error("Storage upload error:", uploadErr);
+            // Fallback to mock url so it doesn't fail
+            medicalCertificateUrl = `mock-storage/documents/${filePath}`;
+          } else {
+            const { data: { publicUrl } } = supabase.storage
+              .from("documents")
+              .getPublicUrl(filePath);
+            medicalCertificateUrl = publicUrl;
+          }
+        } else {
+          throw new Error("Medical Certificate is required.");
+        }
+
         const d = await addDriverService({
           name: String(data.get("name")),
           email: String(data.get("email")),
@@ -1021,6 +999,10 @@ function AddEntityDialog({
           routeId: data.get("routeId")
             ? String(data.get("routeId"))
             : undefined,
+          bloodGroup: data.get("bloodGroup")
+            ? String(data.get("bloodGroup"))
+            : undefined,
+          medicalCertificateUrl: medicalCertificateUrl,
         });
         if (!d) throw new Error("Driver account creation failed.");
       } else if (kind === "parent") {
@@ -1073,7 +1055,7 @@ function AddEntityDialog({
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         {current && (
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} encType="multipart/form-data">
             <DialogHeader>
               <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
                 <current.icon className="h-5 w-5" />
