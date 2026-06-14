@@ -20,18 +20,18 @@ export const Route = createFileRoute("/app/analytics")({
 });
 
 const ecoData = [
-  { name: "Mon", score: 85 },
-  { name: "Tue", score: 88 },
-  { name: "Wed", score: 92 },
-  { name: "Thu", score: 89 },
-  { name: "Fri", score: 95 },
+  { name: "Mon", score: 0 },
+  { name: "Tue", score: 0 },
+  { name: "Wed", score: 0 },
+  { name: "Thu", score: 0 },
+  { name: "Fri", score: 0 },
 ];
 
 const otpData = [
-  { name: "Route A", onTime: 95, delayed: 5 },
-  { name: "Route B", onTime: 82, delayed: 18 },
-  { name: "Route C", onTime: 98, delayed: 2 },
-  { name: "Route D", onTime: 76, delayed: 24 },
+  { name: "Route A", onTime: 0, delayed: 0 },
+  { name: "Route B", onTime: 0, delayed: 0 },
+  { name: "Route C", onTime: 0, delayed: 0 },
+  { name: "Route D", onTime: 0, delayed: 0 },
 ];
 
 function AnalyticsDashboard() {
@@ -57,10 +57,10 @@ function AnalyticsDashboard() {
             </div>
           </div>
           <p className="text-4xl font-bold">
-            92<span className="text-lg text-muted-foreground">/100</span>
+            0<span className="text-lg text-muted-foreground">/100</span>
           </p>
-          <p className="text-xs text-success mt-2 flex items-center gap-1">
-            <TrendingUp className="h-3 w-3" /> +4% from last week
+          <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+            <TrendingUp className="h-3 w-3" /> 0% from last week
           </p>
         </Card>
 
@@ -73,8 +73,8 @@ function AnalyticsDashboard() {
               <Activity className="h-5 w-5" />
             </div>
           </div>
-          <p className="text-4xl font-bold">88.5%</p>
-          <p className="text-xs text-primary mt-2 flex items-center gap-1">
+          <p className="text-4xl font-bold">0%</p>
+          <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
             <TrendingUp className="h-3 w-3" /> Industry avg: 82%
           </p>
         </Card>
@@ -88,7 +88,7 @@ function AnalyticsDashboard() {
               <AlertTriangle className="h-5 w-5" />
             </div>
           </div>
-          <p className="text-4xl font-bold">3</p>
+          <p className="text-4xl font-bold">0</p>
           <p className="text-xs text-muted-foreground mt-2">
             Harsh braking events detected today
           </p>
@@ -112,7 +112,7 @@ function AnalyticsDashboard() {
                   fontSize={12}
                   tickLine={false}
                   axisLine={false}
-                  domain={[60, 100]}
+                  domain={[0, 100]}
                 />
                 <Tooltip
                   contentStyle={{

@@ -56,6 +56,9 @@ function LoginPage() {
   const onEmailSubmit = async (data: LoginForm) => {
     setIsLoading(true);
     try {
+      // Clear any stuck sessions before attempting a new login
+      await supabase.auth.signOut();
+      
       const res = await supabaseSignIn(data.email, data.password);
       if (res && res.error) {
         if (res.error.toLowerCase().includes("invalid login credentials")) {
@@ -79,12 +82,10 @@ function LoginPage() {
       const sess = await getSession();
       if (sess && sess.role) {
         if (sess.role !== role) {
-          toast.error(
-            `Account exists but is registered as a ${sess.role}, not a ${role}.`,
-            { className: "text-destructive border-destructive" },
+          toast.success(
+            `Logged in successfully! Redirecting to ${sess.role} dashboard...`,
           );
-          await supabase.auth.signOut();
-          setIsLoading(false);
+          navigate({ to: homeFor(sess.role) });
           return;
         }
         toast.success("Login Successful");

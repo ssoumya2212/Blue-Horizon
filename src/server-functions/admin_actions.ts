@@ -1,42 +1,59 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
+import { z } from "zod";
 
-const supabaseUrl =
-  process.env.VITE_SUPABASE_URL || "https://unrzzlidycgtptvsdmck.supabase.co";
+const supabaseUrl = process.env.VITE_SUPABASE_URL || "";
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || "";
 
 const getSupabaseAdmin = () => {
-  if (
-    !supabaseServiceRoleKey ||
-    supabaseServiceRoleKey === "your_supabase_service_role_key"
-  ) {
-    throw new Error(
-      "SUPABASE_SERVICE_ROLE_KEY is not configured in environment variables. Admin tasks require the service role key.",
-    );
+  if (!supabaseServiceRoleKey || supabaseServiceRoleKey === "your_supabase_service_role_key") {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY is not configured in environment variables.");
   }
   return createClient(supabaseUrl, supabaseServiceRoleKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
+    auth: { autoRefreshToken: false, persistSession: false },
   });
 };
 
+async function verifyAuth(token: string, requireAdmin: boolean = true) {
+  if (!token) throw new Error("Unauthorized: No token provided");
+  if (!supabaseUrl || !supabaseAnonKey) throw new Error("Supabase config missing");
+  
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  
+  if (error || !user) throw new Error("Unauthorized: Invalid token");
+  
+  if (requireAdmin) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+      
+    if (!profile || profile.role !== "admin") {
+      throw new Error("Forbidden: Admin access required");
+    }
+  }
+  return user;
+}
+
 export const adminCreateUser = createServerFn({ method: "POST" })
   .inputValidator(
-    (d: any) =>
-      d as {
-        email: string;
-        password?: string;
-        fullName: string;
-        role: "parent" | "driver" | "admin";
-        phone?: string;
-        metadata?: any;
-      },
+    z.object({
+      token: z.string(),
+      email: z.string().email(),
+      password: z.string().optional(),
+      fullName: z.string(),
+      role: z.enum(["parent", "driver", "admin"]),
+      phone: z.string().optional(),
+      metadata: z.any().optional(),
+    })
   )
   .handler(
-    async ({ data: { email, password, fullName, role, phone, metadata } }) => {
+    async ({ data: { token, email, password, fullName, role, phone, metadata } }) => {
       try {
+        await verifyAuth(token, true);
         const supabaseAdmin = getSupabaseAdmin();
 
         // 1. Create auth user
@@ -67,7 +84,6 @@ export const adminCreateUser = createServerFn({ method: "POST" })
           });
 
         if (profileError) {
-          // Rollback auth user creation if profile insert fails
           await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
           throw profileError;
         }
@@ -82,19 +98,20 @@ export const adminCreateUser = createServerFn({ method: "POST" })
 
 export const adminUpdateUser = createServerFn({ method: "POST" })
   .inputValidator(
-    (d: any) =>
-      d as {
-        id: string;
-        email?: string;
-        password?: string;
-        fullName?: string;
-        phone?: string;
-        metadata?: any;
-      },
+    z.object({
+      token: z.string(),
+      id: z.string(),
+      email: z.string().email().optional(),
+      password: z.string().min(6).optional(),
+      fullName: z.string().optional(),
+      phone: z.string().optional(),
+      metadata: z.any().optional(),
+    })
   )
   .handler(
-    async ({ data: { id, email, password, fullName, phone, metadata } }) => {
+    async ({ data: { token, id, email, password, fullName, phone, metadata } }) => {
       try {
+        await verifyAuth(token, true);
         const supabaseAdmin = getSupabaseAdmin();
 
         // 1. Update Auth settings (email/password/metadata) if provided
@@ -138,12 +155,12 @@ export const adminUpdateUser = createServerFn({ method: "POST" })
   );
 
 export const adminDeleteUser = createServerFn({ method: "POST" })
-  .inputValidator((d: any) => d as { id: string })
-  .handler(async ({ data: { id } }) => {
+  .inputValidator(z.object({ token: z.string(), id: z.string() }))
+  .handler(async ({ data: { token, id } }) => {
     try {
+      await verifyAuth(token, true);
       const supabaseAdmin = getSupabaseAdmin();
 
-      // Profiles has cascade delete constraint, so deleting auth user removes profile
       const { error } = await supabaseAdmin.auth.admin.deleteUser(id);
       if (error) throw error;
 
@@ -155,13 +172,13 @@ export const adminDeleteUser = createServerFn({ method: "POST" })
   });
 
 export const adminDisableUser = createServerFn({ method: "POST" })
-  .inputValidator((d: any) => d as { id: string; disable: boolean })
-  .handler(async ({ data: { id, disable } }) => {
+  .inputValidator(z.object({ token: z.string(), id: z.string(), disable: z.boolean() }))
+  .handler(async ({ data: { token, id, disable } }) => {
     try {
+      await verifyAuth(token, true);
       const supabaseAdmin = getSupabaseAdmin();
       const status = disable ? "disabled" : "approved";
 
-      // Update profile status
       const { error: profileError } = await supabaseAdmin
         .from("profiles")
         .update({ status })
@@ -169,7 +186,6 @@ export const adminDisableUser = createServerFn({ method: "POST" })
 
       if (profileError) throw profileError;
 
-      // Update Auth ban duration (infinite to disable, none to enable)
       const { error: authError } =
         await supabaseAdmin.auth.admin.updateUserById(id, {
           ban_duration: disable ? "infinite" : "none",
@@ -185,9 +201,10 @@ export const adminDisableUser = createServerFn({ method: "POST" })
   });
 
 export const adminResetPassword = createServerFn({ method: "POST" })
-  .inputValidator((d: any) => d as { id: string; password?: string })
-  .handler(async ({ data: { id, password } }) => {
+  .inputValidator(z.object({ token: z.string(), id: z.string(), password: z.string().optional() }))
+  .handler(async ({ data: { token, id, password } }) => {
     try {
+      await verifyAuth(token, true);
       const supabaseAdmin = getSupabaseAdmin();
       const newPassword = password || "123456";
 
@@ -205,30 +222,31 @@ export const adminResetPassword = createServerFn({ method: "POST" })
 
 export const adminAddParentWithStudent = createServerFn({ method: "POST" })
   .inputValidator(
-    (d: any) =>
-      d as {
-        parentName: string;
-        fatherName?: string;
-        motherName?: string;
-        email: string;
-        phone?: string;
-        address?: string;
-        password?: string;
-        studentName: string;
-        registerNo: string;
-        dob?: string;
-        gender?: "male" | "female" | "other";
-        class?: string;
-        section?: string;
-        pickupAddress?: string;
-        dropAddress?: string;
-        busId?: string;
-        routeId?: string;
-      },
+    z.object({
+      token: z.string(),
+      parentName: z.string(),
+      fatherName: z.string().optional(),
+      motherName: z.string().optional(),
+      email: z.string().email(),
+      phone: z.string().optional(),
+      address: z.string().optional(),
+      password: z.string().optional(),
+      studentName: z.string(),
+      registerNo: z.string(),
+      dob: z.string().optional(),
+      gender: z.enum(["male", "female", "other"]).optional(),
+      class: z.string().optional(),
+      section: z.string().optional(),
+      pickupAddress: z.string().optional(),
+      dropAddress: z.string().optional(),
+      busId: z.string().optional(),
+      routeId: z.string().optional(),
+    })
   )
   .handler(
     async ({
       data: {
+        token,
         parentName,
         fatherName,
         motherName,
@@ -248,11 +266,12 @@ export const adminAddParentWithStudent = createServerFn({ method: "POST" })
         routeId,
       },
     }) => {
-      const supabaseAdmin = getSupabaseAdmin();
       let authUser: any = null;
 
       try {
-        // Fetch driver's name for assigned_driver if a bus is assigned
+        await verifyAuth(token, true);
+        const supabaseAdmin = getSupabaseAdmin();
+
         let driverName = "";
         if (busId) {
           try {
@@ -269,7 +288,6 @@ export const adminAddParentWithStudent = createServerFn({ method: "POST" })
           }
         }
 
-        // 1. Create Auth User for parent
         const { data: authData, error: authError } =
           await supabaseAdmin.auth.admin.createUser({
             email,
@@ -281,38 +299,35 @@ export const adminAddParentWithStudent = createServerFn({ method: "POST" })
           });
 
         if (authError) throw authError;
-        if (!authData.user)
-          throw new Error("Failed to create parent auth user.");
+        if (!authData.user) throw new Error("Failed to create parent auth user.");
         authUser = authData.user;
 
-        // 2. Create Profile for parent
         const { error: profileError } = await supabaseAdmin
           .from("profiles")
           .insert({
             id: authUser.id,
             full_name: parentName,
-            parent_name: parentName, // workflow field
+            parent_name: parentName,
             email,
             phone: phone || null,
             role: "parent",
             status: "approved",
-            password_changed: false, // workflow field
-            created_by_admin: true, // workflow field
+            password_changed: false,
+            created_by_admin: true,
             student_name: studentName,
             student_roll_no: registerNo,
           });
 
         if (profileError) throw profileError;
 
-        // 3. Create Parent entry
         const { error: parentError } = await supabaseAdmin
           .from("parents")
           .insert({
             id: authUser.id,
-            auth_user_id: authUser.id, // workflow field
-            parent_name: parentName, // workflow field
-            email: email, // workflow field
-            phone: phone || null, // workflow field
+            auth_user_id: authUser.id,
+            parent_name: parentName,
+            email: email,
+            phone: phone || null,
             father_name: fatherName || null,
             mother_name: motherName || null,
             address: address || null,
@@ -320,12 +335,11 @@ export const adminAddParentWithStudent = createServerFn({ method: "POST" })
 
         if (parentError) throw parentError;
 
-        // 4. Create Student entry
         const dbStudent = {
           name: studentName,
-          student_name: studentName, // workflow field
+          student_name: studentName,
           student_roll_no: registerNo,
-          roll_number: registerNo, // workflow field
+          roll_number: registerNo,
           register_no: registerNo,
           class: className || "",
           section: section || "",
@@ -333,11 +347,11 @@ export const adminAddParentWithStudent = createServerFn({ method: "POST" })
           drop_address: dropAddress || address || "",
           parent_phone: phone || "",
           parent_id: authUser.id,
-          assigned_parent_id: authUser.id, // workflow field
+          assigned_parent_id: authUser.id,
           bus_id: busId || null,
-          assigned_bus: busId || null, // workflow field
+          assigned_bus: busId || null,
           route_id: routeId || null,
-          assigned_driver: driverName || null, // workflow field
+          assigned_driver: driverName || null,
           gender: gender || null,
           date_of_birth: dob || null,
           status: "pending",
@@ -355,7 +369,10 @@ export const adminAddParentWithStudent = createServerFn({ method: "POST" })
       } catch (error: any) {
         console.error("adminAddParentWithStudent error:", error);
         if (authUser?.id) {
-          await supabaseAdmin.auth.admin.deleteUser(authUser.id);
+          try {
+             const supabaseAdmin = getSupabaseAdmin();
+             await supabaseAdmin.auth.admin.deleteUser(authUser.id);
+          } catch(e) {}
         }
         return { success: false, error: error.message };
       }
@@ -364,26 +381,27 @@ export const adminAddParentWithStudent = createServerFn({ method: "POST" })
 
 export const adminAddDriver = createServerFn({ method: "POST" })
   .inputValidator(
-    (d: any) =>
-      d as {
-        fullName: string;
-        email: string;
-        phone?: string;
-        password?: string;
-        licenseNumber: string;
-        licenseExpiry?: string;
-        experience?: number;
-        address?: string;
-        emergencyContact?: string;
-        busId?: string;
-        routeId?: string;
-        bloodGroup?: string;
-        medicalCertificateUrl?: string;
-      },
+    z.object({
+      token: z.string(),
+      fullName: z.string(),
+      email: z.string().email(),
+      phone: z.string().optional(),
+      password: z.string().optional(),
+      licenseNumber: z.string(),
+      licenseExpiry: z.string().optional(),
+      experience: z.number().optional(),
+      address: z.string().optional(),
+      emergencyContact: z.string().optional(),
+      busId: z.string().optional(),
+      routeId: z.string().optional(),
+      bloodGroup: z.string().optional(),
+      medicalCertificateUrl: z.string().optional(),
+    })
   )
   .handler(
     async ({
       data: {
+        token,
         fullName,
         email,
         phone,
@@ -399,11 +417,12 @@ export const adminAddDriver = createServerFn({ method: "POST" })
         medicalCertificateUrl,
       },
     }) => {
-      const supabaseAdmin = getSupabaseAdmin();
       let authUser: any = null;
 
       try {
-        // 1. Create Auth User for driver
+        await verifyAuth(token, true);
+        const supabaseAdmin = getSupabaseAdmin();
+
         const { data: authData, error: authError } =
           await supabaseAdmin.auth.admin.createUser({
             email,
@@ -415,11 +434,9 @@ export const adminAddDriver = createServerFn({ method: "POST" })
           });
 
         if (authError) throw authError;
-        if (!authData.user)
-          throw new Error("Failed to create driver auth user.");
+        if (!authData.user) throw new Error("Failed to create driver auth user.");
         authUser = authData.user;
 
-        // 2. Create Profile for driver
         const { error: profileError } = await supabaseAdmin
           .from("profiles")
           .insert({
@@ -435,7 +452,6 @@ export const adminAddDriver = createServerFn({ method: "POST" })
 
         if (profileError) throw profileError;
 
-        // 3. Insert into drivers table
         const { error: driverError } = await supabaseAdmin
           .from("drivers")
           .insert({
@@ -451,7 +467,6 @@ export const adminAddDriver = createServerFn({ method: "POST" })
 
         if (driverError) throw driverError;
 
-        // 4. Update the assigned bus driver_id and driver_name
         if (busId) {
           const { error: busError } = await supabaseAdmin
             .from("buses")
@@ -469,7 +484,10 @@ export const adminAddDriver = createServerFn({ method: "POST" })
       } catch (error: any) {
         console.error("adminAddDriver error:", error);
         if (authUser?.id) {
-          await supabaseAdmin.auth.admin.deleteUser(authUser.id);
+          try {
+            const supabaseAdmin = getSupabaseAdmin();
+            await supabaseAdmin.auth.admin.deleteUser(authUser.id);
+          } catch(e) {}
         }
         return { success: false, error: error.message };
       }
@@ -477,21 +495,24 @@ export const adminAddDriver = createServerFn({ method: "POST" })
   );
 
 export const completeFirstLogin = createServerFn({ method: "POST" })
-  .inputValidator((d: any) => d as { userId: string; password?: string })
-  .handler(async ({ data: { userId, password } }) => {
+  .inputValidator(z.object({ token: z.string(), userId: z.string(), password: z.string().optional() }))
+  .handler(async ({ data: { token, userId, password } }) => {
     try {
+      const user = await verifyAuth(token, false);
+      // Ensure the user can only change their own password
+      if (user.id !== userId) {
+        throw new Error("Forbidden: You can only complete first login for your own account.");
+      }
+      
       const supabaseAdmin = getSupabaseAdmin();
 
-      // 1. Update Auth settings (password) if provided
       if (password) {
-        const { error: authError } =
-          await supabaseAdmin.auth.admin.updateUserById(userId, {
-            password: password,
-          });
+        const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+          password: password,
+        });
         if (authError) throw authError;
       }
 
-      // 2. Set password_changed = true
       const { error: profileError } = await supabaseAdmin
         .from("profiles")
         .update({ password_changed: true })

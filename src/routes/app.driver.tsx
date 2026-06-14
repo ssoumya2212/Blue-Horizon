@@ -283,6 +283,13 @@ function DriverDashboard() {
       setActiveTrip(data);
       setAssignedBus((prev: any) => ({ ...prev, status: "Running" }));
       toast.success("Trip started! Students status reset to pending.");
+
+      await addNotification(
+        `Bus ${assignedBus.id}`,
+        `Started trip on Route ${assignedRoute?.name || "Unassigned"}.`,
+        "route_update",
+        "all"
+      );
     } catch (err: any) {
       console.error("Error starting trip:", err);
       toast.error(err.message || "Failed to start trip.");
@@ -310,6 +317,13 @@ function DriverDashboard() {
       setActiveTrip(null);
       setAssignedBus((prev: any) => ({ ...prev, status: "Active" }));
       toast.success("Trip completed successfully!");
+
+      await addNotification(
+        `Bus ${assignedBus.id}`,
+        `Completed trip. Status set to Idle.`,
+        "route_update",
+        "all"
+      );
     } catch (err: any) {
       console.error("Error ending trip:", err);
       toast.error(err.message || "Failed to end trip.");

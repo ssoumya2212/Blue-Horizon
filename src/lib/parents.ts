@@ -101,7 +101,9 @@ export async function addParent(data: {
   busId?: string;
   routeId?: string;
 }) {
+  const token = (await supabase.auth.getSession()).data.session?.access_token || "";
   const res = await adminAddParentWithStudent({
+    token,
     parentName: data.name,
     fatherName: data.fatherName,
     motherName: data.motherName,
@@ -147,7 +149,9 @@ export async function updateParent(
   if (data.student_roll_no !== undefined)
     metadata.student_roll_no = data.student_roll_no;
 
+  const token = (await supabase.auth.getSession()).data.session?.access_token || "";
   const res = await adminUpdateUser({
+    token,
     id,
     email: data.email,
     fullName: data.name,
@@ -189,7 +193,8 @@ export async function updateParent(
 }
 
 export async function resetParentPassword(id: string, password?: string) {
-  const res = await adminResetPassword({ id, password });
+  const token = (await supabase.auth.getSession()).data.session?.access_token || "";
+  const res = await adminResetPassword({ token, id, password });
   if (!res.success) {
     toast.error(`Failed to reset password: ${res.error}`);
     return false;
@@ -206,7 +211,8 @@ export async function deleteParent(id: string) {
     .update({ parent_id: null })
     .eq("parent_id", id);
 
-  const res = await adminDeleteUser({ id });
+  const token = (await supabase.auth.getSession()).data.session?.access_token || "";
+  const res = await adminDeleteUser({ token, id });
   if (!res.success) {
     toast.error(`Failed to delete parent: ${res.error}`);
     return false;

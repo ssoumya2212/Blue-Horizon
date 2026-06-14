@@ -187,7 +187,7 @@ ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Notifications viewable by authenticated users." ON public.notifications FOR SELECT USING ( auth.role() = 'authenticated' );
 CREATE POLICY "Admins can insert notifications." ON public.notifications FOR INSERT WITH CHECK ( auth.uid() IN (SELECT id FROM public.profiles WHERE role = 'admin') );
 CREATE POLICY "Parents can insert messages to drivers." ON public.notifications FOR INSERT WITH CHECK ( auth.uid() IN (SELECT id FROM public.profiles WHERE role = 'parent') );
-CREATE POLICY "Users can mark notifications read." ON public.notifications FOR UPDATE USING ( auth.role() = 'authenticated' );
+CREATE POLICY "Admins can update notifications." ON public.notifications FOR UPDATE USING ( auth.uid() IN (SELECT id FROM public.profiles WHERE role = 'admin') );
 
 -- 12. Create USER_SETTINGS table
 CREATE TABLE IF NOT EXISTS public.user_settings (
@@ -241,3 +241,25 @@ ALTER TABLE public.students ADD COLUMN IF NOT EXISTS assigned_parent_id UUID REF
 ALTER TABLE public.students ADD COLUMN IF NOT EXISTS assigned_bus TEXT REFERENCES public.buses(id) ON DELETE SET NULL;
 ALTER TABLE public.students ADD COLUMN IF NOT EXISTS assigned_driver TEXT;
 
+-- ==========================================
+-- SECURITY TRIGGERS
+-- ==========================================
+
+-- Prevent non-admins from changing their own role
+CREATE OR REPLACE FUNCTION public.restrict_role_update()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.role IS DISTINCT FROM OLD.role THEN
+        IF (SELECT role FROM public.profiles WHERE id = auth.uid()) != 'admin' THEN
+            RAISE EXCEPTION 'Only administrators can change roles.';
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS tr_restrict_role_update ON public.profiles;
+CREATE TRIGGER tr_restrict_role_update
+    BEFORE UPDATE ON public.profiles
+    FOR EACH ROW
+    EXECUTE FUNCTION public.restrict_role_update();

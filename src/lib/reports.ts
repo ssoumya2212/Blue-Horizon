@@ -7,26 +7,7 @@ export type Report = {
   createdAt: number;
 };
 
-const seed: Report[] = [
-  {
-    id: "r1",
-    text: "Incident reported at 12:02 PM: Minor delay due to traffic near Stop 6.",
-    author: "Driver Ravi",
-    createdAt: Date.now() - 1000 * 60 * 60,
-  },
-  {
-    id: "r2",
-    text: "Detour applied at 8:14 AM: Construction on Anna Nagar West.",
-    author: "Driver Sahil",
-    createdAt: Date.now() - 1000 * 60 * 60 * 5,
-  },
-  {
-    id: "r3",
-    text: "Bus 012 reported low fuel at 7:40 AM — refuelled at depot.",
-    author: "Driver Vikas",
-    createdAt: Date.now() - 1000 * 60 * 60 * 6,
-  },
-];
+const seed: Report[] = [];
 
 let reports: Report[] = [...seed];
 const listeners = new Set<(r: Report[]) => void>();

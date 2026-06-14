@@ -129,7 +129,9 @@ export async function addDriver(data: {
   bloodGroup?: string;
   medicalCertificateUrl?: string;
 }) {
+  const token = (await supabase.auth.getSession()).data.session?.access_token || "";
   const res = await adminAddDriver({
+    token,
     fullName: data.name,
     email: data.email,
     phone: data.phone,
@@ -171,7 +173,9 @@ export async function updateDriver(
   if (data.bus_id !== undefined) metadata.bus_id = data.bus_id || null;
   if (data.status !== undefined) metadata.status = data.status;
 
+  const token = (await supabase.auth.getSession()).data.session?.access_token || "";
   const res = await adminUpdateUser({
+    token,
     id,
     email: data.email,
     fullName: data.name,
@@ -215,7 +219,8 @@ export async function updateDriver(
 export async function updateDriverStatus(id: string, status: DriverStatus) {
   let res;
   if (status === "disabled") {
-    res = await adminDisableUser({ id, disable: true });
+    const token = (await supabase.auth.getSession()).data.session?.access_token || "";
+    res = await adminDisableUser({ token, id, disable: true });
   } else {
     // If enabling a previously disabled driver
     const { data: p } = await supabase
@@ -224,9 +229,12 @@ export async function updateDriverStatus(id: string, status: DriverStatus) {
       .eq("id", id)
       .single();
     if (p?.status === "disabled") {
-      await adminDisableUser({ id, disable: false });
+      const token = (await supabase.auth.getSession()).data.session?.access_token || "";
+      await adminDisableUser({ token, id, disable: false });
     }
+    const token = (await supabase.auth.getSession()).data.session?.access_token || "";
     res = await adminUpdateUser({
+      token,
       id,
       metadata: { status },
     });
@@ -249,7 +257,8 @@ export async function deleteDriver(id: string) {
     .update({ driver_id: null, driver_name: "Unassigned" })
     .eq("driver_id", id);
 
-  const res = await adminDeleteUser({ id });
+  const token = (await supabase.auth.getSession()).data.session?.access_token || "";
+  const res = await adminDeleteUser({ token, id });
   if (!res.success) {
     toast.error(`Failed to delete driver: ${res.error}`);
     return false;

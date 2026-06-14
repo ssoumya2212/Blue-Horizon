@@ -38,6 +38,7 @@ import {
 
 import { getSession } from "@/lib/auth";
 import { redirect } from "@tanstack/react-router";
+import { formatDistanceToNow } from "date-fns";
 
 export const Route = createFileRoute("/app/admin")({
   beforeLoad: async () => {
@@ -49,44 +50,6 @@ export const Route = createFileRoute("/app/admin")({
   head: () => ({ meta: [{ title: "Admin Dashboard — Blue Horizon" }] }),
   component: AdminDashboard,
 });
-
-const activity = [
-  {
-    id: 1,
-    who: "Bus 007",
-    what: "Departed from Anna Nagar Roundana",
-    time: "2 min ago",
-    status: "On Route",
-  },
-  {
-    id: 2,
-    who: "Driver Ravi",
-    what: "Marked attendance for Route A",
-    time: "8 min ago",
-    status: "Done",
-  },
-  {
-    id: 3,
-    who: "Bus 012",
-    what: "Reported minor delay near Stop 6",
-    time: "15 min ago",
-    status: "Delay",
-  },
-  {
-    id: 4,
-    who: "Parent K. Mehta",
-    what: "Updated emergency contact",
-    time: "1 hr ago",
-    status: "Done",
-  },
-  {
-    id: 5,
-    who: "Driver Sahil",
-    what: "Submitted onboarding documents",
-    time: "3 hr ago",
-    status: "Pending",
-  },
-];
 
 import {
   useDrivers,
@@ -109,6 +72,7 @@ function AdminDashboard() {
   const [buses, setBuses] = useState<DbBus[]>([]);
   const [students, setStudents] = useState<DbStudent[]>([]);
   const [routes, setRoutes] = useState<any[]>([]);
+  const [activities, setActivities] = useState<any[]>([]);
   const [statsData, setStatsData] = useState({
     buses: 0,
     drivers: 0,
@@ -181,6 +145,31 @@ function AdminDashboard() {
       alerts: alertCount || 0,
       pendingDrivers: pendCount || 0,
     });
+
+    const { data: recentNotifs } = await supabase
+      .from("notifications")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    if (recentNotifs) {
+      setActivities(
+        recentNotifs.map((n: any) => ({
+          id: n.id,
+          who: n.title,
+          what: n.message,
+          time: n.created_at,
+          status:
+            n.type === "emergency"
+              ? "Emergency"
+              : n.type === "delay" || n.type === "bus_delay"
+                ? "Delay"
+                : "Done",
+        })),
+      );
+    } else {
+      setActivities([]);
+    }
   };
 
   useEffect(() => {
@@ -479,33 +468,47 @@ function AdminDashboard() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {activity.map((a) => (
-                <TableRow key={a.id}>
-                  <TableCell className="font-medium">{a.who}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {a.what}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {a.time}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Badge
-                      variant="outline"
-                      className={
-                        a.status === "On Route"
-                          ? "border-primary/30 bg-primary/10 text-primary"
-                          : a.status === "Done"
-                            ? "border-success/30 bg-success/15 text-success"
-                            : a.status === "Pending"
-                              ? "border-amber-300 bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400"
-                              : "border-destructive/30 bg-destructive/15 text-destructive"
-                      }
-                    >
-                      {a.status}
-                    </Badge>
+              {activities.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground text-sm">
+                    No recent activity recorded yet.
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                activities.map((a) => {
+                  let relativeTime = "";
+                  try {
+                    relativeTime = formatDistanceToNow(new Date(a.time), { addSuffix: true });
+                  } catch (e) {
+                    relativeTime = "some time ago";
+                  }
+                  return (
+                    <TableRow key={a.id}>
+                      <TableCell className="font-medium">{a.who}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {a.what}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {relativeTime}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Badge
+                          variant="outline"
+                          className={
+                            a.status === "Emergency"
+                              ? "border-destructive/30 bg-destructive/15 text-destructive"
+                              : a.status === "Delay"
+                                ? "border-amber-300 bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400"
+                                : "border-success/30 bg-success/15 text-success"
+                          }
+                        >
+                          {a.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
             </TableBody>
           </Table>
         </Card>

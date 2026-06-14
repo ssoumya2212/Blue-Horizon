@@ -47,7 +47,7 @@ export const getCurrentUser = async () => {
 
 // SEND OTP (Using Twilio)
 export const sendOtp = async (phone: string) => {
-  const res = await sendTwilioOtp({ data: phone });
+  const res = await sendTwilioOtp({ data: { phone } });
 
   if (!res.success) {
     return { error: res.error || "Failed to send OTP", data: null };

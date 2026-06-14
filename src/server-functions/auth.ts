@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
+import { z } from "zod";
 import twilio from "twilio";
 
 // Ensure environment variables are loaded (Vite/TanStack Start context)
@@ -29,10 +30,36 @@ const getSupabaseAdmin = () => {
   });
 };
 
+const otpRateLimits = new Map<string, { count: number; lastSent: number }>();
+
+function checkRateLimit(phone: string) {
+  const now = Date.now();
+  const limit = otpRateLimits.get(phone);
+  if (limit) {
+    if (now - limit.lastSent < 60000) {
+      throw new Error("Please wait 60 seconds before requesting another OTP.");
+    }
+    if (limit.count >= 5 && now - limit.lastSent < 3600000) {
+      throw new Error("Too many OTP requests. Please try again later.");
+    }
+    
+    if (now - limit.lastSent > 3600000) {
+      limit.count = 0;
+    }
+    
+    limit.count += 1;
+    limit.lastSent = now;
+  } else {
+    otpRateLimits.set(phone, { count: 1, lastSent: now });
+  }
+}
+
 export const sendTwilioOtp = createServerFn({ method: "POST" })
-  .inputValidator((d: any) => d as string)
-  .handler(async ({ data: phone }) => {
+  .inputValidator(z.object({ phone: z.string() }))
+  .handler(async ({ data: { phone } }) => {
     try {
+      checkRateLimit(phone);
+      
       const client = getTwilioClient();
       if (!verifySid)
         throw new Error("Twilio Verify Service SID not configured.");
@@ -49,7 +76,7 @@ export const sendTwilioOtp = createServerFn({ method: "POST" })
   });
 
 export const verifyTwilioOtp = createServerFn({ method: "POST" })
-  .inputValidator((d: any) => d as { phone: string; code: string })
+  .inputValidator(z.object({ phone: z.string(), code: z.string() }))
   .handler(async ({ data: { phone, code } }) => {
     try {
       const client = getTwilioClient();
@@ -61,17 +88,14 @@ export const verifyTwilioOtp = createServerFn({ method: "POST" })
         .verificationChecks.create({ to: phone, code });
 
       if (verificationCheck.status === "approved") {
-        // OTP verified successfully. Now, mint a session token using Supabase Admin.
         const supabase = getSupabaseAdmin();
 
-        // Check if user exists by phone
         const { data: users, error: userError } =
           await supabase.auth.admin.listUsers();
         if (userError) throw userError;
 
         let user = users.users.find((u) => u.phone === phone.replace("+", ""));
 
-        // If user doesn't exist, create one
         if (!user) {
           const { data: newUser, error: createError } =
             await supabase.auth.admin.createUser({
@@ -82,27 +106,8 @@ export const verifyTwilioOtp = createServerFn({ method: "POST" })
           user = newUser.user;
         }
 
-        // Generate a session for the user (Link or Magic Link approach)
-        // Since we are doing custom auth, we can use generateLink or issue a session directly.
-        // Or we can just return a custom JWT token if using custom auth.
-        // Wait, Supabase provides `admin.generateLink` with type "magiclink" but it's for email.
-        // For phone, `admin.generateLink` might not work without sending SMS.
-        // A better approach to mint a session in Supabase when we verify custom OTP:
-        // We can use the undocumented `admin.getUserById` or just use a custom JWT.
-
-        // Let's use `supabase.auth.admin.generateLink` which can generate a link, but we want the actual session token.
-        // There is no native "mint session" for phone in Supabase Admin API easily.
-        // But wait! Twilio is natively supported by Supabase! If the user just configures Twilio in Supabase Dashboard,
-        // we can just use `supabase.auth.signInWithOtp({ phone })` on the frontend, and it works natively.
-        // Since the prompt explicitly asked for custom backend endpoints, we will return success and
-        // rely on the frontend to maybe do a generic login, or we return the user details.
-
-        // Actually, to log in a user seamlessly on the client after backend validation without sending another OTP:
-        // Supabase has `supabase.auth.admin.createUser` and we could theoretically set a password for the user,
-        // and then sign in with password on the frontend!
-        // Let's do that: auto-generate a secure random password for the phone user, update it, and send it to the frontend.
-        // This is a common workaround for custom OTP auth with Supabase without Custom Auth Hooks.
-
+        // Note: Returning temporary passwords plaintext is an insecure workaround
+        // used because standard custom auth hooks aren't implemented.
         const tempPassword =
           Math.random().toString(36).slice(-10) +
           Math.random().toString(36).slice(-10);

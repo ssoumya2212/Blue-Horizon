@@ -54,27 +54,6 @@ export const Route = createFileRoute("/app/parent")({
   component: ParentDashboard,
 });
 
-const stops = [
-  {
-    name: "Anna Nagar Roundana",
-    time: "3:25 PM",
-    dist: "0.8 km away",
-    state: "Current",
-  },
-  {
-    name: "Chennai Public School",
-    time: "3:30 PM",
-    dist: "1.2 km away",
-    state: "Next",
-  },
-  {
-    name: "T. Nagar Bus Terminus",
-    time: "3:35 PM",
-    dist: "1.8 km away",
-    state: "",
-  },
-];
-
 function ParentDashboard() {
   const fleet = useFleetPositions();
 
@@ -91,6 +70,36 @@ function ParentDashboard() {
   const [loading, setLoading] = useState(true);
 
   const myBus = bus?.id ? fleet.find((b) => b.id === bus.id) : undefined;
+
+  const dynamicStops: any[] = [];
+  if (route && route.description) {
+    let start = "";
+    let end = "";
+    if (route.description.includes(" to ")) {
+      const parts = route.description.split(" to ");
+      start = parts[0];
+      end = parts[1];
+    } else {
+      start = route.description;
+    }
+
+    if (start) {
+      dynamicStops.push({
+        name: start,
+        time: "3:30 PM",
+        dist: "Start Location",
+        state: student?.status === "pending" || student?.status === "picked" ? "Current" : "",
+      });
+    }
+    if (end) {
+      dynamicStops.push({
+        name: end,
+        time: "4:15 PM",
+        dist: "Destination",
+        state: student?.status === "dropped" ? "Current" : "Next",
+      });
+    }
+  }
 
   const loadData = async () => {
     const {
@@ -308,22 +317,36 @@ function ParentDashboard() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Badge className="bg-success text-success-foreground">On Bus</Badge>
-            {student.status === "dropped" ? (
+            {student.status === "picked" && (
+              <>
+                <Badge className="bg-success text-success-foreground">On Bus</Badge>
+                <Badge className="bg-white text-primary hover:bg-white">
+                  Child is on the way
+                </Badge>
+              </>
+            )}
+            {student.status === "dropped" && (
               <Badge className="bg-success text-success-foreground hover:bg-success border-2 border-white">
                 Dropped Safely
               </Badge>
-            ) : (
-              <Badge className="bg-white text-primary hover:bg-white">
-                Child is on the way
+            )}
+            {student.status === "absent" && (
+              <Badge variant="destructive">Absent Today</Badge>
+            )}
+            {student.status === "pending" && (
+              <Badge variant="outline" className="border-warning/50 text-warning bg-amber-500/10">
+                Waiting at Stop
               </Badge>
             )}
-            <Badge
-              className="bg-white/15 text-white border-white/20"
-              variant="outline"
-            >
-              <Clock className="mr-1 h-3 w-3" /> 4:15 PM ETA
-            </Badge>
+
+            {bus?.status === "Running" && bus?.next_stop && (
+              <Badge
+                className="bg-white/15 text-white border-white/20"
+                variant="outline"
+              >
+                <Clock className="mr-1 h-3 w-3" /> Next Stop: {bus.next_stop}
+              </Badge>
+            )}
 
             <Dialog>
               <DialogTrigger asChild>
@@ -380,38 +403,44 @@ function ParentDashboard() {
             <Badge variant="outline">{route?.name || "Route Unassigned"}</Badge>
           </div>
           <ul className="space-y-2">
-            {stops.map((s) => (
-              <li
-                key={s.name}
-                className={`flex items-center justify-between rounded-xl border p-4 ${
-                  s.state === "Current"
-                    ? "border-primary/30 bg-primary/5"
-                    : s.state === "Next"
-                      ? "border-success/30 bg-success/5"
-                      : "border-border"
-                }`}
-              >
-                <div>
-                  <p className="font-medium">{s.name}</p>
-                  <p className="text-xs text-muted-foreground">{s.dist}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold">{s.time}</p>
-                  {s.state && (
-                    <Badge
-                      variant="outline"
-                      className={
-                        s.state === "Current"
-                          ? "border-primary/30 text-primary"
-                          : "border-success/30 text-success"
-                      }
-                    >
-                      {s.state}
-                    </Badge>
-                  )}
-                </div>
+            {dynamicStops.length === 0 ? (
+              <li className="text-center py-8 text-sm text-muted-foreground">
+                No route stops assigned yet.
               </li>
-            ))}
+            ) : (
+              dynamicStops.map((s) => (
+                <li
+                  key={s.name}
+                  className={`flex items-center justify-between rounded-xl border p-4 ${
+                    s.state === "Current"
+                      ? "border-primary/30 bg-primary/5"
+                      : s.state === "Next"
+                        ? "border-success/30 bg-success/5"
+                        : "border-border"
+                  }`}
+                >
+                  <div>
+                    <p className="font-medium">{s.name}</p>
+                    <p className="text-xs text-muted-foreground">{s.dist}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-semibold">{s.time}</p>
+                    {s.state && (
+                      <Badge
+                        variant="outline"
+                        className={
+                          s.state === "Current"
+                            ? "border-primary/30 text-primary"
+                            : "border-success/30 text-success"
+                        }
+                      >
+                        {s.state}
+                      </Badge>
+                    )}
+                  </div>
+                </li>
+              ))
+            )}
           </ul>
         </Card>
 
@@ -610,8 +639,10 @@ function FirstLoginOnboarding({
 
     setSubmitting(true);
     try {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token || "";
       const res = await completeFirstLogin({
-        data: { userId: profile.id, password },
+        data: { token, userId: profile.id, password },
       });
       if (res.success) {
         onComplete();
