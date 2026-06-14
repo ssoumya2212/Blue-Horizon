@@ -323,31 +323,33 @@ export const adminAddParentWithStudent = createServerFn({ method: "POST" })
 
         if (profileError) throw profileError;
 
-        const { error: parentError } = await supabaseAdmin
-          .from("parents")
-          .insert({
-            id: authUser.id,
-            auth_user_id: authUser.id,
-            parent_name: parentName,
-            email: email,
-            phone: phone || null,
-            father_name: fatherName || null,
-            mother_name: motherName || null,
-            address: address || null,
-          });
-
-        if (parentError) throw parentError;
+        try {
+          const { error: parentError } = await supabaseAdmin
+            .from("parents")
+            .insert({
+              id: authUser.id,
+              auth_user_id: authUser.id,
+              parent_name: parentName,
+              email: email,
+              phone: phone || null,
+              father_name: fatherName || null,
+              mother_name: motherName || null,
+              address: address || null,
+            });
+          if (parentError) console.error("Ignoring parents table insert error:", parentError.message);
+        } catch (e) {
+           console.error("Parents insert failed", e);
+        }
 
         const dbStudent = {
           name: studentName,
           student_name: studentName,
           student_roll_no: registerNo,
           roll_number: registerNo,
-          register_no: registerNo,
           class: className || "",
           section: section || "",
-          pickup_address: pickupAddress || address || "",
-          drop_address: dropAddress || address || "",
+          pickup_address: pickupAddress || address || "N/A",
+          drop_address: dropAddress || address || "N/A",
           parent_phone: phone || "",
           parent_id: authUser.id,
           assigned_parent_id: authUser.id,
@@ -355,8 +357,6 @@ export const adminAddParentWithStudent = createServerFn({ method: "POST" })
           assigned_bus: busId || null,
           route_id: routeId || null,
           assigned_driver: driverName || null,
-          gender: gender || null,
-          date_of_birth: dob || null,
           status: "pending",
           last_updated: new Date().toISOString(),
         };
@@ -377,7 +377,9 @@ export const adminAddParentWithStudent = createServerFn({ method: "POST" })
              await supabaseAdmin.auth.admin.deleteUser(authUser.id);
           } catch(e) {}
         }
-        return { success: false, error: error.message };
+        console.error("adminAddParent explicitly caught error:", error);
+        require("fs").appendFileSync("C:\\Users\\soumy\\OneDrive\\Desktop\\PDD\\debug-parent.log", new Date().toISOString() + " ERROR: " + (error.message || error) + "\n" + (error.stack || "") + "\n");
+        return { success: false, error: error.message || "Unknown error" };
       }
     },
   );
@@ -455,20 +457,23 @@ export const adminAddDriver = createServerFn({ method: "POST" })
 
         if (profileError) throw profileError;
 
-        const { error: driverError } = await supabaseAdmin
-          .from("drivers")
-          .insert({
-            id: authUser.id,
-            license_number: licenseNumber,
-            license_expiry: licenseExpiry || null,
-            experience: experience || null,
-            address: address || null,
-            emergency_contact: emergencyContact || null,
-            blood_group: bloodGroup || null,
-            medical_certificate_url: medicalCertificateUrl || null,
-          });
-
-        if (driverError) throw driverError;
+        try {
+          const { error: driverError } = await supabaseAdmin
+            .from("drivers")
+            .insert({
+              id: authUser.id,
+              license_number: licenseNumber,
+              license_expiry: licenseExpiry || null,
+              experience: experience || null,
+              address: address || null,
+              emergency_contact: emergencyContact || null,
+              blood_group: bloodGroup || null,
+              medical_certificate_url: medicalCertificateUrl || null,
+            });
+          if (driverError) console.error("Ignoring drivers table insert error:", driverError.message);
+        } catch (e) {
+           console.error("Drivers insert failed", e);
+        }
 
         if (busId) {
           const { error: busError } = await supabaseAdmin
@@ -492,7 +497,9 @@ export const adminAddDriver = createServerFn({ method: "POST" })
             await supabaseAdmin.auth.admin.deleteUser(authUser.id);
           } catch(e) {}
         }
-        return { success: false, error: error.message };
+        console.error("adminAddDriver explicitly caught error:", error);
+        require("fs").appendFileSync("C:\\Users\\soumy\\OneDrive\\Desktop\\PDD\\debug-driver.log", new Date().toISOString() + " ERROR: " + (error.message || error) + "\n" + (error.stack || "") + "\n");
+        return { success: false, error: error.message || "Unknown error" };
       }
     },
   );

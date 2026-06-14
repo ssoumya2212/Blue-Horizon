@@ -55,9 +55,26 @@ function Routes() {
       )
     : routes;
 
-  const handleAdd = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleAdd = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const data = new FormData(e.currentTarget);
+    // Check required fields manually
+    const form = e.currentTarget;
+    let missingFieldLabel = "";
+    const requiredInputs = form.querySelectorAll("[required]");
+    for (let i = 0; i < requiredInputs.length; i++) {
+      const input = requiredInputs[i] as HTMLInputElement | HTMLSelectElement;
+      if (!input.value || input.value.trim() === "") {
+        const label = form.querySelector(`label[for="${input.id}"]`);
+        missingFieldLabel = label ? label.textContent || input.name : input.name;
+        break;
+      }
+    }
+
+    if (missingFieldLabel) {
+      toast.error(`${missingFieldLabel} is required`);
+      return;
+    }
+    const data = new FormData(form);
     addRoute({
       name: String(data.get("name") || "Route"),
       start: String(data.get("start") || ""),

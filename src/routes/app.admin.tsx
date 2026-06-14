@@ -934,18 +934,19 @@ function AddEntityDialog({
     
     // Check required fields manually
     const form = e.currentTarget;
-    let hasEmptyRequired = false;
-    current.fields.forEach((f: any) => {
+    let missingFieldLabel = "";
+    for (const f of current.fields) {
       if (f.required) {
          const el = form.elements.namedItem(f.name) as HTMLInputElement | HTMLSelectElement;
          if (!el || !el.value || el.value.trim() === "") {
-            hasEmptyRequired = true;
+            missingFieldLabel = f.label;
+            break;
          }
       }
-    });
+    }
 
-    if (hasEmptyRequired) {
-       toast.error("Please fill out all required fields!");
+    if (missingFieldLabel) {
+       toast.error(`${missingFieldLabel} is required`);
        return;
     }
 
@@ -1032,7 +1033,7 @@ function AddEntityDialog({
           name: String(data.get("name")),
           email: String(data.get("email")),
           phone: String(data.get("phone")),
-          student_name: String(data.get("child")),
+          student_name: String(data.get("student_name")),
           student_roll_no: String(data.get("student_roll_no")),
           password: String(data.get("password") || "123456"),
           fatherName: data.get("fatherName")

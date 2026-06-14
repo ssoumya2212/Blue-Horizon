@@ -38,6 +38,7 @@ import { addNotification } from "@/lib/notifications";
 
 import { getSession } from "@/lib/auth";
 import { redirect } from "@tanstack/react-router";
+import { completeFirstLogin } from "@/server-functions/admin_actions";
 
 export const Route = createFileRoute("/app/driver")({
   beforeLoad: async () => {
@@ -474,6 +475,18 @@ function DriverDashboard() {
     );
   }
 
+  if (driverProfile?.created_by_admin && !driverProfile?.password_changed) {
+    return (
+      <DriverFirstLoginOnboarding
+        profile={driverProfile}
+        onComplete={() => {
+          setDriverProfile((prev: any) => ({ ...prev, password_changed: true }));
+          toast.success("Account setup completed successfully!");
+        }}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -843,6 +856,146 @@ function DriverDashboard() {
           </ul>
         </Card>
       </div>
+    </div>
+  );
+}
+
+function DriverFirstLoginOnboarding({
+  profile,
+  onComplete,
+}: {
+  profile: any;
+  onComplete: () => void;
+}) {
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters long.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast.error("Passwords do not match.");
+      return;
+    }
+    if (!acceptedTerms) {
+      toast.error("You must accept the Terms and Conditions to proceed.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token || "";
+      const res = await completeFirstLogin({
+        data: { token, userId: profile.id, password },
+      });
+      if (res.success) {
+        onComplete();
+      } else {
+        toast.error(res.error || "Failed to update password.");
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "An error occurred.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="flex min-h-[80vh] items-center justify-center p-4">
+      <Card className="w-full max-w-md overflow-hidden border-0 shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-card backdrop-blur-md">
+        <div className="p-8 space-y-6">
+          <div className="space-y-2 text-center">
+            <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+              Welcome Driver
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Please complete your account setup to access the driver portal.
+            </p>
+          </div>
+
+          <div className="rounded-xl bg-muted/40 p-4 border border-border/50 text-xs space-y-1">
+            <p className="font-semibold text-foreground/80">Account Info:</p>
+            <p className="text-muted-foreground font-medium">
+              Email:{" "}
+              <span className="font-semibold text-foreground">
+                {profile.email}
+              </span>
+            </p>
+            <p className="text-muted-foreground font-medium">
+              Assigned Bus:{" "}
+              <span className="font-semibold text-foreground">
+                {profile.bus_id || "Unassigned"}
+              </span>
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium leading-none">
+                New Password
+              </label>
+              <Input
+                type="password"
+                placeholder="••••••••"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium leading-none">
+                Confirm Password
+              </label>
+              <Input
+                type="password"
+                placeholder="••••••••"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full"
+              />
+            </div>
+
+            <div className="flex items-start space-x-3 pt-2">
+              <input
+                id="terms"
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary mt-1 cursor-pointer"
+              />
+              <label
+                htmlFor="terms"
+                className="text-xs text-muted-foreground leading-normal cursor-pointer select-none"
+              >
+                I accept the{" "}
+                <span className="font-medium text-primary hover:underline">
+                  Terms & Conditions
+                </span>{" "}
+                and consent to share my GPS location while on active trips.
+              </label>
+            </div>
+
+            <Button
+              type="submit"
+              disabled={submitting}
+              className="w-full mt-6 bg-primary text-primary-foreground hover:bg-primary/95 transition-all shadow-md py-6 rounded-xl text-base font-semibold"
+            >
+              {submitting
+                ? "Saving Settings..."
+                : "Complete Setup & Launch Dashboard"}
+            </Button>
+          </form>
+        </div>
+      </Card>
     </div>
   );
 }

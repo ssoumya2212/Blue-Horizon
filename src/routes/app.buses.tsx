@@ -105,8 +105,27 @@ function Buses() {
 
   const handleAddSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    // Check required fields manually
+    const form = e.currentTarget;
+    let missingFieldLabel = "";
+    const requiredInputs = form.querySelectorAll("[required]");
+    for (let i = 0; i < requiredInputs.length; i++) {
+      const input = requiredInputs[i] as HTMLInputElement | HTMLSelectElement;
+      if (!input.value || input.value.trim() === "") {
+        const label = form.querySelector(`label[for="${input.id}"]`);
+        missingFieldLabel = label ? label.textContent || input.name : input.name;
+        break;
+      }
+    }
+
+    if (missingFieldLabel) {
+      toast.error(`${missingFieldLabel} is required`);
+      return;
+    }
+
     setSaving(true);
-    const data = new FormData(e.currentTarget);
+    const data = new FormData(form);
     const busNum = String(data.get("busNumber"));
     const capacityVal = Number(data.get("capacity") || 40);
     const routeIdVal = String(data.get("route_id") || "");
@@ -146,8 +165,27 @@ function Buses() {
   const handleEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!editingBus) return;
+
+    // Check required fields manually
+    const form = e.currentTarget;
+    let missingFieldLabel = "";
+    const requiredInputs = form.querySelectorAll("[required]");
+    for (let i = 0; i < requiredInputs.length; i++) {
+      const input = requiredInputs[i] as HTMLInputElement | HTMLSelectElement;
+      if (!input.value || input.value.trim() === "") {
+        const label = form.querySelector(`label[for="${input.id}"]`);
+        missingFieldLabel = label ? label.textContent || input.name : input.name;
+        break;
+      }
+    }
+
+    if (missingFieldLabel) {
+      toast.error(`${missingFieldLabel} is required`);
+      return;
+    }
+
     setSaving(true);
-    const data = new FormData(e.currentTarget);
+    const data = new FormData(form);
     const capacityVal = Number(data.get("capacity") || 40);
     const routeIdVal = String(data.get("route_id") || "");
     const driverIdVal = String(data.get("driver_id") || "");

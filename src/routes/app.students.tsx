@@ -92,16 +92,19 @@ function Students() {
 
     // Check required fields manually
     const form = e.currentTarget;
-    let hasEmptyRequired = false;
+    let missingFieldLabel = "";
     const requiredInputs = form.querySelectorAll("[required]");
-    requiredInputs.forEach((input: any) => {
+    for (let i = 0; i < requiredInputs.length; i++) {
+      const input = requiredInputs[i] as HTMLInputElement | HTMLSelectElement;
       if (!input.value || input.value.trim() === "") {
-        hasEmptyRequired = true;
+        const label = form.querySelector(`label[for="${input.id}"]`);
+        missingFieldLabel = label ? label.textContent || input.name : input.name;
+        break;
       }
-    });
+    }
 
-    if (hasEmptyRequired) {
-      toast.error("Please fill out all required fields!");
+    if (missingFieldLabel) {
+      toast.error(`${missingFieldLabel} is required`);
       return;
     }
 
@@ -138,8 +141,26 @@ function Students() {
   const handleEdit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!editingStudent) return;
+    // Check required fields manually
+    const form = e.currentTarget;
+    let missingFieldLabel = "";
+    const requiredInputs = form.querySelectorAll("[required]");
+    for (let i = 0; i < requiredInputs.length; i++) {
+      const input = requiredInputs[i] as HTMLInputElement | HTMLSelectElement;
+      if (!input.value || input.value.trim() === "") {
+        const label = form.querySelector(`label[for="${input.id}"]`);
+        missingFieldLabel = label ? label.textContent || input.name : input.name;
+        break;
+      }
+    }
+
+    if (missingFieldLabel) {
+      toast.error(`${missingFieldLabel} is required`);
+      return;
+    }
+
     setSaving(true);
-    const formData = new FormData(e.currentTarget);
+    const formData = new FormData(form);
 
     const updated = {
       name: String(formData.get("name")),

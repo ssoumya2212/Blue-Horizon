@@ -93,8 +93,26 @@ function Drivers() {
 
   const handleAddSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    // Check required fields manually
+    const form = e.currentTarget;
+    let missingFieldLabel = "";
+    const requiredInputs = form.querySelectorAll("[required]");
+    for (let i = 0; i < requiredInputs.length; i++) {
+      const input = requiredInputs[i] as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+      if (!input.value || input.value.trim() === "") {
+        const label = form.querySelector(`label[for="${input.id}"]`);
+        missingFieldLabel = label ? label.textContent || input.name : input.name;
+        break;
+      }
+    }
+
+    if (missingFieldLabel) {
+      toast.error(`${missingFieldLabel} is required`);
+      return;
+    }
+
     setSaving(true);
-    const data = new FormData(e.currentTarget);
+    const data = new FormData(form);
     try {
       const file = data.get("medical_certificate") as File;
       let medicalCertificateUrl = "";
