@@ -931,6 +931,24 @@ function AddEntityDialog({
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!current || !kind) return;
+    
+    // Check required fields manually
+    const form = e.currentTarget;
+    let hasEmptyRequired = false;
+    current.fields.forEach((f: any) => {
+      if (f.required) {
+         const el = form.elements.namedItem(f.name) as HTMLInputElement | HTMLSelectElement;
+         if (!el || !el.value || el.value.trim() === "") {
+            hasEmptyRequired = true;
+         }
+      }
+    });
+
+    if (hasEmptyRequired) {
+       toast.error("Please fill out all required fields!");
+       return;
+    }
+
     setSaving(true);
     const data = new FormData(e.currentTarget);
     try {
@@ -944,7 +962,7 @@ function AddEntityDialog({
           bus: "—",
           driver: "Unassigned",
         });
-        toast.success("Route added successfully");
+        toast.success("Route saved successfully!");
       } else if (kind === "bus") {
         await addBusService({
           busNumber: String(data.get("busNumber")),
@@ -953,7 +971,7 @@ function AddEntityDialog({
             ? String(data.get("route_id"))
             : undefined,
         });
-        toast.success("Bus registered successfully");
+        toast.success("Bus saved successfully!");
       } else if (kind === "driver") {
         const file = data.get("medical_certificate") as File;
         let medicalCertificateUrl = "";
@@ -1008,6 +1026,7 @@ function AddEntityDialog({
           medicalCertificateUrl: medicalCertificateUrl,
         });
         if (!d) throw new Error("Driver account creation failed.");
+        toast.success("Driver saved successfully!");
       } else if (kind === "parent") {
         const p = await addParentService({
           name: String(data.get("name")),
@@ -1045,6 +1064,7 @@ function AddEntityDialog({
             : undefined,
         });
         if (!p) throw new Error("Parent account creation failed.");
+        toast.success("Parent and student saved successfully!");
       }
       onClose();
     } catch (err: any) {
