@@ -89,8 +89,24 @@ function Students() {
 
   const handleAdd = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    // Check required fields manually
+    const form = e.currentTarget;
+    let hasEmptyRequired = false;
+    const requiredInputs = form.querySelectorAll("[required]");
+    requiredInputs.forEach((input: any) => {
+      if (!input.value || input.value.trim() === "") {
+        hasEmptyRequired = true;
+      }
+    });
+
+    if (hasEmptyRequired) {
+      toast.error("Please fill out all required fields!");
+      return;
+    }
+
     setSaving(true);
-    const formData = new FormData(e.currentTarget);
+    const formData = new FormData(form);
 
     const newStudent = {
       name: String(formData.get("name")),

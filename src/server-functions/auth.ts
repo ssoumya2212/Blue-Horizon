@@ -4,12 +4,17 @@ import { z } from "zod";
 import twilio from "twilio";
 
 // Ensure environment variables are loaded (Vite/TanStack Start context)
-const twilioSid = process.env.TWILIO_ACCOUNT_SID;
-const twilioToken = process.env.TWILIO_AUTH_TOKEN;
-const verifySid = process.env.TWILIO_VERIFY_SERVICE_SID;
+// @ts-ignore
+const twilioSid = import.meta.env.TWILIO_ACCOUNT_SID || (typeof process !== "undefined" ? process.env.TWILIO_ACCOUNT_SID : undefined);
+// @ts-ignore
+const twilioToken = import.meta.env.TWILIO_AUTH_TOKEN || (typeof process !== "undefined" ? process.env.TWILIO_AUTH_TOKEN : undefined);
+// @ts-ignore
+const verifySid = import.meta.env.TWILIO_VERIFY_SERVICE_SID || (typeof process !== "undefined" ? process.env.TWILIO_VERIFY_SERVICE_SID : undefined);
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || "";
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+// @ts-ignore
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || (typeof process !== "undefined" ? process.env.VITE_SUPABASE_URL : "") || "";
+// @ts-ignore
+const supabaseServiceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || import.meta.env.SUPABASE_SERVICE_ROLE_KEY || (typeof process !== "undefined" ? process.env.SUPABASE_SERVICE_ROLE_KEY : "") || "";
 
 const getTwilioClient = () => {
   if (!twilioSid || !twilioToken) {

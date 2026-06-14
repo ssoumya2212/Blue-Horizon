@@ -816,7 +816,7 @@ function AddEntityDialog({
         },
         // Student Details
         {
-          name: "child",
+          name: "student_name",
           label: "Student Name",
           placeholder: "Aarav Smith",
           required: true,
