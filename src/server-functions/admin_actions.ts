@@ -378,7 +378,6 @@ export const adminAddParentWithStudent = createServerFn({ method: "POST" })
           } catch(e) {}
         }
         console.error("adminAddParent explicitly caught error:", error);
-        require("fs").appendFileSync("C:\\Users\\soumy\\OneDrive\\Desktop\\PDD\\debug-parent.log", new Date().toISOString() + " ERROR: " + (error.message || error) + "\n" + (error.stack || "") + "\n");
         return { success: false, error: error.message || "Unknown error" };
       }
     },
@@ -498,7 +497,6 @@ export const adminAddDriver = createServerFn({ method: "POST" })
           } catch(e) {}
         }
         console.error("adminAddDriver explicitly caught error:", error);
-        require("fs").appendFileSync("C:\\Users\\soumy\\OneDrive\\Desktop\\PDD\\debug-driver.log", new Date().toISOString() + " ERROR: " + (error.message || error) + "\n" + (error.stack || "") + "\n");
         return { success: false, error: error.message || "Unknown error" };
       }
     },
