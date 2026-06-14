@@ -927,9 +927,11 @@ function AddEntityDialog({
   } as const;
 
   const current = kind && kind !== "announcement" ? config[kind] : null;
+  const [errorMsg, setErrorMsg] = useState("");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setErrorMsg("");
     if (!current || !kind) return;
     
     // Check required fields manually
@@ -946,6 +948,7 @@ function AddEntityDialog({
     }
 
     if (missingFieldLabel) {
+       setErrorMsg(`${missingFieldLabel} is required`);
        toast.error(`${missingFieldLabel} is required`);
        return;
     }
@@ -1069,6 +1072,7 @@ function AddEntityDialog({
       }
       onClose();
     } catch (err: any) {
+      setErrorMsg(`Error: ${err.message}`);
       toast.error(`Error: ${err.message}`);
     } finally {
       setSaving(false);
@@ -1087,6 +1091,11 @@ function AddEntityDialog({
               <DialogTitle>{current.title}</DialogTitle>
               <DialogDescription>{current.description}</DialogDescription>
             </DialogHeader>
+            {errorMsg && (
+              <div className="bg-red-100 text-red-700 p-3 rounded-md text-sm font-medium mt-4 border border-red-200">
+                {errorMsg}
+              </div>
+            )}
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {current.fields.map((f: any) => (
