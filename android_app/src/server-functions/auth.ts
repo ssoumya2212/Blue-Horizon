@@ -1,18 +1,21 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
+// @ts-ignore
+const cfEnv = globalThis.__CF_ENV__ || {};
+
 // Ensure environment variables are loaded (Vite/TanStack Start context)
 // @ts-ignore
-const twilioSid = import.meta.env.TWILIO_ACCOUNT_SID || (typeof process !== "undefined" ? process.env.TWILIO_ACCOUNT_SID : undefined);
+const twilioSid = import.meta.env.TWILIO_ACCOUNT_SID || cfEnv.TWILIO_ACCOUNT_SID || (typeof process !== "undefined" ? process.env.TWILIO_ACCOUNT_SID : undefined);
 // @ts-ignore
-const twilioToken = import.meta.env.TWILIO_AUTH_TOKEN || (typeof process !== "undefined" ? process.env.TWILIO_AUTH_TOKEN : undefined);
+const twilioToken = import.meta.env.TWILIO_AUTH_TOKEN || cfEnv.TWILIO_AUTH_TOKEN || (typeof process !== "undefined" ? process.env.TWILIO_AUTH_TOKEN : undefined);
 // @ts-ignore
-const verifySid = import.meta.env.TWILIO_VERIFY_SERVICE_SID || (typeof process !== "undefined" ? process.env.TWILIO_VERIFY_SERVICE_SID : undefined);
+const verifySid = import.meta.env.TWILIO_VERIFY_SERVICE_SID || cfEnv.TWILIO_VERIFY_SERVICE_SID || (typeof process !== "undefined" ? process.env.TWILIO_VERIFY_SERVICE_SID : undefined);
 
 // @ts-ignore
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || (typeof process !== "undefined" ? process.env.VITE_SUPABASE_URL : "") || "";
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || cfEnv.VITE_SUPABASE_URL || (typeof process !== "undefined" ? process.env.VITE_SUPABASE_URL : "") || "";
 // @ts-ignore
-const supabaseServiceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || import.meta.env.SUPABASE_SERVICE_ROLE_KEY || (typeof process !== "undefined" ? process.env.SUPABASE_SERVICE_ROLE_KEY : "") || "";
+const supabaseServiceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || import.meta.env.SUPABASE_SERVICE_ROLE_KEY || cfEnv.SUPABASE_SERVICE_ROLE_KEY || (typeof process !== "undefined" ? process.env.SUPABASE_SERVICE_ROLE_KEY : "") || "";
 
 const getTwilioClient = async () => {
   if (!twilioSid || !twilioToken) {
