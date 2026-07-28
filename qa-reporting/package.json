@@ -1,0 +1,12 @@
+{
+  "name": "blue-horizon-qa-reporting",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate-report": "node scripts/generate-test-report.js"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  }
+}

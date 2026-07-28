@@ -1,0 +1,171 @@
+{
+  "project": {
+    "name": "Blue Horizon",
+    "version": "1.0.0",
+    "build": "local",
+    "environment": "QA",
+    "platforms": ["Web", "Android"],
+    "preparedBy": "QA Team",
+    "reviewedBy": "Project Lead",
+    "reportDate": "2026-07-28"
+  },
+  "summary": {
+    "totalCases": 24,
+    "passed": 18,
+    "failed": 3,
+    "blocked": 2,
+    "notRun": 1,
+    "overallStatus": "PARTIAL PASS",
+    "notes": "Replace sample data with actual execution results from Selenium, Appium, unit, load and vulnerability testing."
+  },
+  "validationTests": [
+    {
+      "id": "VAL-001",
+      "module": "Login",
+      "scenario": "Admin login with valid credentials",
+      "precondition": "Admin account exists",
+      "steps": "Open app > enter email > enter password > click login",
+      "expected": "Admin dashboard loads successfully",
+      "actual": "Admin dashboard loads successfully",
+      "status": "Pass",
+      "tool": "Manual/Selenium",
+      "severity": "Medium",
+      "owner": "QA",
+      "remarks": "Baseline smoke"
+    },
+    {
+      "id": "VAL-002",
+      "module": "Parent Onboarding",
+      "scenario": "Create parent and linked student",
+      "precondition": "Admin logged in",
+      "steps": "Open Parents > Add parent > fill student details > save",
+      "expected": "Parent and student are both created and linked",
+      "actual": "Student linkage should be verified after latest fix",
+      "status": "Retest",
+      "tool": "Manual/Appium",
+      "severity": "High",
+      "owner": "QA",
+      "remarks": "Validate Students page visibility"
+    }
+  ],
+  "vulnerabilityTests": [
+    {
+      "id": "VUL-001",
+      "module": "Authentication",
+      "check": "Weak password policy review",
+      "tool": "Manual/Code Review",
+      "severity": "High",
+      "cvss": "7.5",
+      "expected": "Weak/default passwords should be disallowed or rotated",
+      "actual": "Temporary passwords exist for onboarding",
+      "status": "Open",
+      "evidence": "Review onboarding flow and reset flow",
+      "recommendation": "Enforce first-login password change and stronger admin-created defaults"
+    },
+    {
+      "id": "VUL-002",
+      "module": "Android APK",
+      "check": "Static APK analysis",
+      "tool": "MobSF",
+      "severity": "Medium",
+      "cvss": "5.3",
+      "expected": "No critical mobile findings",
+      "actual": "Populate from MobSF artifact",
+      "status": "To Run",
+      "evidence": "Attach MobSF PDF or HTML report",
+      "recommendation": "Review exported findings and remediate by severity"
+    }
+  ],
+  "unitTests": [
+    {
+      "id": "UNIT-001",
+      "component": "Route helpers",
+      "testCase": "Serialize ordered stops correctly",
+      "framework": "Add Vitest/Jest if needed",
+      "status": "Not Implemented",
+      "coverage": "0%",
+      "result": "No unit test runner currently configured",
+      "remarks": "Add tests for route/path helpers first"
+    },
+    {
+      "id": "UNIT-002",
+      "component": "Driver data mapping",
+      "testCase": "Handle missing optional DB columns safely",
+      "framework": "Add Vitest/Jest if needed",
+      "status": "Not Implemented",
+      "coverage": "0%",
+      "result": "No automated unit test present",
+      "remarks": "Useful for schema drift protection"
+    }
+  ],
+  "loadTests": [
+    {
+      "id": "LOAD-001",
+      "endpointOrFlow": "Web app build/start smoke",
+      "tool": "k6/JMeter/Artillery",
+      "virtualUsers": "25",
+      "duration": "2m",
+      "target": "Login + dashboard navigation",
+      "responseTimeP95": "TBD",
+      "errorRate": "TBD",
+      "status": "Planned",
+      "remarks": "No load script in repo yet"
+    },
+    {
+      "id": "LOAD-002",
+      "endpointOrFlow": "Realtime map/tracking reads",
+      "tool": "k6/JMeter/Artillery",
+      "virtualUsers": "50",
+      "duration": "5m",
+      "target": "Tracking and route views",
+      "responseTimeP95": "TBD",
+      "errorRate": "TBD",
+      "status": "Planned",
+      "remarks": "Coordinate with Supabase rate limits"
+    }
+  ],
+  "seleniumTests": [
+    {
+      "id": "SEL-001",
+      "suite": "Web Smoke",
+      "scenario": "Admin login and open Parents page",
+      "browser": "Chrome",
+      "environment": "QA",
+      "status": "Planned",
+      "evidence": "Add screenshots and logs",
+      "remarks": "Selenium dependency exists, suite not scaffolded yet"
+    },
+    {
+      "id": "SEL-002",
+      "suite": "Web Functional",
+      "scenario": "Create route and assign bus/driver",
+      "browser": "Chrome",
+      "environment": "QA",
+      "status": "Planned",
+      "evidence": "Add screenshots and logs",
+      "remarks": "Good candidate for end-to-end automation"
+    }
+  ],
+  "appiumTests": [
+    {
+      "id": "APP-001",
+      "suite": "Android Smoke",
+      "scenario": "Launch app and login",
+      "device": "Android Emulator API 30",
+      "osVersion": "Android 11",
+      "status": "Planned",
+      "evidence": "Appium logs + screenshots",
+      "remarks": "Existing workflow present under android/.github/workflows/appium.yml"
+    },
+    {
+      "id": "APP-002",
+      "suite": "Android Functional",
+      "scenario": "Parent track bus and view route",
+      "device": "Android Emulator API 30",
+      "osVersion": "Android 11",
+      "status": "Planned",
+      "evidence": "Appium logs + screenshots",
+      "remarks": "Map/realtime behavior should be validated"
+    }
+  ]
+}

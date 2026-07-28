@@ -1,0 +1,19 @@
+{
+  "name": "blue-horizon-mobile",
+  "version": "1.0.0",
+  "scripts": {
+    "sync": "capacitor sync android",
+    "build": "capacitor build android",
+    "apk": "cd android && gradlew assembleDebug",
+    "aab": "cd android && gradlew bundleRelease"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.3.4",
+    "@capacitor/core": "^8.3.4",
+    "@capacitor/geolocation": "^8.2.0",
+    "@capacitor/local-notifications": "^8.2.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.3.4"
+  }
+}
