@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "private": true,
   "workspaces": [
-    "web app",
-    "mobile app"
+    "WEB APP",
+    "MOBILE"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace=\"web app\"",
-    "build": "npm run build --workspace=\"web app\"",
-    "sync": "npm run build --workspace=\"web app\" && npx cap sync android --workspace=\"mobile app\""
+    "dev": "npm run dev --workspace=\"WEB APP\"",
+    "build": "npm run build --workspace=\"WEB APP\"",
+    "sync": "npm run build --workspace=\"WEB APP\" && npx cap sync android --workspace=\"MOBILE\""
   }
 }
