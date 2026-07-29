@@ -4,13 +4,13 @@ on:
   push:
     branches: [main, master, develop]
     paths:
-      - 'mobile_app/**'
+      - 'MOBILE/**'
       - 'android/qa-automation/**'
       - '.github/workflows/mobile-appium.yml'
   pull_request:
     branches: [main, master, develop]
     paths:
-      - 'mobile_app/**'
+      - 'MOBILE/**'
       - 'android/qa-automation/**'
       - '.github/workflows/mobile-appium.yml'
   workflow_dispatch:
@@ -35,11 +35,11 @@ jobs:
           node-version: 20
           cache: npm
           cache-dependency-path: |
-            mobile_app/package-lock.json
+            MOBILE/package-lock.json
             android/qa-automation/package-lock.json
 
       - name: Install mobile app dependencies
-        working-directory: mobile_app
+        working-directory: MOBILE
         run: npm install
 
       - name: Install Appium automation dependencies
@@ -47,7 +47,7 @@ jobs:
         run: npm install
 
       - name: Build Android debug APK
-        working-directory: mobile_app/android
+        working-directory: MOBILE/android
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug
@@ -76,4 +76,4 @@ jobs:
           path: |
             android/qa-automation/reports/**
             android/qa-automation/logs/**
-            mobile_app/android/app/build/outputs/**/*.apk
+            MOBILE/android/app/build/outputs/**/*.apk

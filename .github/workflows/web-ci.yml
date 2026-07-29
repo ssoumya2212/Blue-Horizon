@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: web_app
+        working-directory: 'WEB APP'
 
     steps:
       - name: Checkout
@@ -25,7 +25,7 @@ jobs:
           cache: npm
           cache-dependency-path: |
             package-lock.json
-            web_app/package-lock.json
+            'WEB APP/package-lock.json'
 
       - name: Install root dependencies
         run: npm install
@@ -46,4 +46,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: web-app-dist
-          path: web_app/dist
+          path: 'WEB APP/dist'
