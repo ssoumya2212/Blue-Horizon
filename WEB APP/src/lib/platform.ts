@@ -4,6 +4,7 @@ import { Capacitor } from "@capacitor/core";
  * Detects if the app is running in a native Android environment via Capacitor.
  */
 export const isAndroid = () => {
+  if (typeof window === "undefined") return false;
   return Capacitor.isNativePlatform();
 };
 
