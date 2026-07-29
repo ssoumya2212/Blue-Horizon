@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
 
-dotenv.config({ path: "C:/Users/soumy/OneDrive/Desktop/PDD/web_app/.env" });
+dotenv.config({ path: "C:/Users/soumy/OneDrive/Desktop/PDD/WEB APP/.env" });
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -43,8 +43,8 @@ const TEST_DATA = {
     rollNo: "SVT-2026-001",
     class: "7",
     section: "A",
-    pickupAddress: "college",
-    dropAddress: "college",
+    pickupAddress: "No. 12, Ganesh Avenue, Saveetha Nagar, Thandalam, Chennai - 602105",
+    dropAddress: "Kuthambakkam Bus Stop, Kuthambakkam, Chennai - 602105",
   },
   busLocation: {
     latitude: 13.0094,

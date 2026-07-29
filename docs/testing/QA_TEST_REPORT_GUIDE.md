@@ -20,9 +20,8 @@ This folder provides an Excel-based QA reporting setup for:
 From the project root:
 
 ```bash
-cd qa-reporting
-npm install
-npm run generate-report
+npm install --prefix qa-reporting
+node qa-reporting/scripts/generate-test-report.js
 ```
 
 ## What the workbook contains
