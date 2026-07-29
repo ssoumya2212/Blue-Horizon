@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import twilio from "twilio";
 
 // Ensure environment variables are loaded (Vite/TanStack Start context)
 // @ts-ignore
@@ -16,11 +15,11 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || (typeof process !== "un
 // @ts-ignore
 const supabaseServiceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || import.meta.env.SUPABASE_SERVICE_ROLE_KEY || (typeof process !== "undefined" ? process.env.SUPABASE_SERVICE_ROLE_KEY : "") || "";
 
-const getTwilioClient = () => {
+const getTwilioAuthHeader = () => {
   if (!twilioSid || !twilioToken) {
     throw new Error("Twilio credentials not configured.");
   }
-  return twilio(twilioSid, twilioToken);
+  return "Basic " + btoa(`${twilioSid}:${twilioToken}`);
 };
 
 const getSupabaseAdmin = () => {
@@ -65,13 +64,27 @@ export const sendTwilioOtp = createServerFn({ method: "POST" })
     try {
       checkRateLimit(phone);
       
-      const client = getTwilioClient();
+      const authHeader = getTwilioAuthHeader();
       if (!verifySid)
         throw new Error("Twilio Verify Service SID not configured.");
 
-      const verification = await client.verify.v2
-        .services(verifySid)
-        .verifications.create({ to: phone, channel: "sms" });
+      const response = await fetch(
+        `https://verify.twilio.com/v2/Services/${verifySid}/Verifications`,
+        {
+          method: "POST",
+          headers: {
+            "Authorization": authHeader,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({ To: phone, Channel: "sms" }).toString(),
+        }
+      );
+
+      const verification = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(verification.message || "Failed to send OTP");
+      }
 
       return { success: true, status: verification.status };
     } catch (error: any) {
@@ -84,13 +97,27 @@ export const verifyTwilioOtp = createServerFn({ method: "POST" })
   .inputValidator(z.object({ phone: z.string(), code: z.string() }))
   .handler(async ({ data: { phone, code } }) => {
     try {
-      const client = getTwilioClient();
+      const authHeader = getTwilioAuthHeader();
       if (!verifySid)
         throw new Error("Twilio Verify Service SID not configured.");
 
-      const verificationCheck = await client.verify.v2
-        .services(verifySid)
-        .verificationChecks.create({ to: phone, code });
+      const response = await fetch(
+        `https://verify.twilio.com/v2/Services/${verifySid}/VerificationCheck`,
+        {
+          method: "POST",
+          headers: {
+            "Authorization": authHeader,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({ To: phone, Code: code }).toString(),
+        }
+      );
+
+      const verificationCheck = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(verificationCheck.message || "Failed to verify OTP");
+      }
 
       if (verificationCheck.status === "approved") {
         const supabase = getSupabaseAdmin();

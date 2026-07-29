@@ -54,12 +54,11 @@ function DownloadsPage() {
           </h1>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
             Get the Blue Horizon app for your device. Choose from our native
-            Android app, Windows desktop application, or use the web app on any
-            device.
+            Android app, or use the web app on any device.
           </p>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-3">
+        <div className="grid gap-8 md:grid-cols-2 max-w-4xl mx-auto">
           {/* Section A: Android */}
           <Card className="flex flex-col overflow-hidden border-2 border-primary/20 hover:border-primary/50 transition-colors">
             <div className="bg-primary/5 p-6 flex flex-col items-center justify-center border-b border-border text-center">
@@ -126,64 +125,6 @@ function DownloadsPage() {
                   <Download className="mr-2 h-5 w-5" /> Download APK
                 </a>
               </Button>
-            </div>
-          </Card>
-
-          {/* Section B: Windows */}
-          <Card className="flex flex-col overflow-hidden border-2 border-primary/20 hover:border-primary/50 transition-colors">
-            <div className="bg-primary/5 p-6 flex flex-col items-center justify-center border-b border-border text-center">
-              <div className="h-16 w-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-4 shadow-sm">
-                <Monitor className="h-8 w-8" />
-              </div>
-              <h2 className="text-2xl font-bold">Windows App</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Standalone desktop software
-              </p>
-            </div>
-            <div className="p-6 flex-1 flex flex-col justify-between">
-              <div className="space-y-4 mb-8">
-                {isLoading ? (
-                  <div className="space-y-2 animate-pulse">
-                    <div className="h-4 bg-muted rounded w-3/4"></div>
-                    <div className="h-4 bg-muted rounded w-1/2"></div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <span className="text-muted-foreground">Version:</span>
-                      <span className="font-medium text-right">
-                        {windowsRelease?.version || "1.0.0"}
-                      </span>
-
-                      <span className="text-muted-foreground">Size:</span>
-                      <span className="font-medium text-right">
-                        {windowsRelease?.file_size || "65 MB"}
-                      </span>
-
-                      <span className="text-muted-foreground">Released:</span>
-                      <span className="font-medium text-right">
-                        {windowsRelease
-                          ? new Date(
-                              windowsRelease.created_at,
-                            ).toLocaleDateString()
-                          : new Date().toLocaleDateString()}
-                      </span>
-                    </div>
-                    {windowsRelease?.release_notes && (
-                      <div className="mt-4 text-sm bg-muted/50 p-3 rounded-lg border">
-                        <p className="font-semibold mb-1 flex items-center gap-1">
-                          <Info className="h-3 w-3" /> Release Notes
-                        </p>
-                        <p className="text-muted-foreground">
-                          {windowsRelease.release_notes}
-                        </p>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-
-              <DownloadWindowsButton className="w-full bg-blue-600 hover:bg-blue-700 text-white" />
             </div>
           </Card>
 

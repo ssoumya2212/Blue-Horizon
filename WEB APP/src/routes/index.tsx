@@ -119,13 +119,15 @@ function LandingPage() {
               <Button
                 asChild
                 size="lg"
-                className="bg-white text-primary hover:bg-white/90"
+                className="bg-emerald-600 text-white hover:bg-emerald-700"
               >
-                <Link to="/login">
-                  Launch App <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
+                <a
+                  href="https://github.com/ssoumya2212/Blue-Horizon/releases/latest/download/app-debug.apk"
+                  target="_blank" rel="noopener noreferrer"
+                >
+                  <Download className="mr-2 h-5 w-5" /> Download Android App (.apk)
+                </a>
               </Button>
-              {!isNative() && <DynamicDownloadButton />}
             </div>
 
             <div className="mt-10 grid grid-cols-3 gap-3">
