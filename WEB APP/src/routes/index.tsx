@@ -128,6 +128,18 @@ function LandingPage() {
                   <Download className="mr-2 h-5 w-5" /> Download Android App (.apk)
                 </a>
               </Button>
+              <Button
+                asChild
+                size="lg"
+                className="bg-blue-600 text-white hover:bg-blue-700"
+              >
+                <a
+                  href="https://github.com/ssoumya2212/Blue-Horizon/releases/latest/download/Blue.Horizon.Setup.1.0.0.exe"
+                  target="_blank" rel="noopener noreferrer"
+                >
+                  <Download className="mr-2 h-5 w-5" /> Download Windows App (.exe)
+                </a>
+              </Button>
             </div>
 
             <div className="mt-10 grid grid-cols-3 gap-3">
