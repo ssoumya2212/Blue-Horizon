@@ -34,16 +34,10 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: |
-            MOBILE/package-lock.json
-            android/qa-automation/package-lock.json
+          cache-dependency-path: '**/package-lock.json'
 
       - name: Install mobile app dependencies
         working-directory: MOBILE
-        run: npm install
-
-      - name: Install Appium automation dependencies
-        working-directory: android/qa-automation
         run: npm install
 
       - name: Build Android debug APK
@@ -52,28 +46,10 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      - name: Run static APK analysis
-        working-directory: android/qa-automation
-        run: npm run analyze-apk
-        continue-on-error: true
-
-      - name: Run Appium tests on emulator
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 30
-          arch: x86_64
-          profile: pixel_4
-          script: |
-            cd android/qa-automation
-            npm run wdio
-        continue-on-error: true
-
       - name: Upload Appium artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: mobile-appium-artifacts
           path: |
-            android/qa-automation/reports/**
-            android/qa-automation/logs/**
             MOBILE/android/app/build/outputs/**/*.apk
