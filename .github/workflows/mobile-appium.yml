@@ -40,14 +40,6 @@ jobs:
             --reporter spec
         continue-on-error: true
 
-      - name: Install qa-reporting dependencies
-        working-directory: qa-reporting
-        run: npm install
-
-      - name: Generate full excel report from templates
-        working-directory: qa-reporting
-        run: node scripts/generate-test-report.js
-
       - name: Upload Appium report artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -56,7 +48,6 @@ jobs:
           path: |
             qa-automation/excel/*.xlsx
             qa-automation/reports/*.xlsx
-            qa-reporting/reports/*.xlsx
           retention-days: 30
 
   android-build:

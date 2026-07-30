@@ -45,14 +45,6 @@ jobs:
         working-directory: qa-automation
         run: node utilities/excel-report-generator.js
 
-      - name: Install qa-reporting dependencies
-        working-directory: qa-reporting
-        run: npm install
-
-      - name: Generate full excel report from templates
-        working-directory: qa-reporting
-        run: node scripts/generate-test-report.js
-
       - name: Upload Excel QA Report
         uses: actions/upload-artifact@v4
         with:
@@ -60,5 +52,4 @@ jobs:
           path: |
             qa-automation/excel/Blue_Horizon_Master_Test_Report.xlsx
             qa-automation/reports/Blue_Horizon_Master_Test_Report.xlsx
-            qa-reporting/reports/*.xlsx
           retention-days: 90

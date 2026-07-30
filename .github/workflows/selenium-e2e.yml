@@ -218,20 +218,13 @@ jobs:
             "tests/specs/driver-dashboard.spec.js" \
             "tests/specs/parent-dashboard.spec.js" \
             "tests/specs/vulnerability-tests.spec.js" \
+            "tests/specs/appium-mobile.spec.js" \
             --require tests/hooks/setup.js \
             --require tests/hooks/teardown.js \
             --timeout 180000 \
             --reporter mochawesome \
             --reporter-options reportDir=reports/html,reportFilename=mochawesome,overwrite=true,html=true,json=true
         continue-on-error: true
-
-      - name: Install qa-reporting dependencies
-        working-directory: qa-reporting
-        run: npm install
-
-      - name: Generate full excel report from templates
-        working-directory: qa-reporting
-        run: node scripts/generate-test-report.js
 
       - name: Upload All QA Artifacts
         if: always()
@@ -244,5 +237,4 @@ jobs:
             qa-automation/reports/html/
             qa-automation/screenshots/
             qa-automation/logs/
-            qa-reporting/reports/*.xlsx
           retention-days: 30
