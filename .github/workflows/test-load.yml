@@ -1,0 +1,52 @@
+name: Load Test Suite
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Load Test Suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: 'qa-automation/package-lock.json'
+
+      - name: Install QA dependencies
+        working-directory: qa-automation
+        run: npm install
+
+      - name: Run Load Test Suite
+        working-directory: qa-automation
+        env:
+          TEST_ENV: qa
+          BASE_URL: https://bluehorizon.blue-horizon.workers.dev
+        run: |
+          npx mocha \
+            "tests/specs/load-tests.spec.js" \
+            --require tests/hooks/setup.js \
+            --require tests/hooks/teardown.js \
+            --timeout 120000 \
+            --reporter spec
+        continue-on-error: true
+
+      - name: Upload Excel Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-load-report
+          path: |
+            qa-automation/excel/*.xlsx
+            qa-automation/reports/*.xlsx
+          retention-days: 30
