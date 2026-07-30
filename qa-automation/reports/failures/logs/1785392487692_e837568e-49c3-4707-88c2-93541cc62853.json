@@ -1,0 +1,28 @@
+{
+  "testName": "VAL-006 should toggle password visibility when eye icon is clicked",
+  "browser": "chrome",
+  "currentUrl": "https://bluehorizon.blue-horizon.workers.dev/login",
+  "failureReason": "no such element: Unable to locate element: {\"method\":\"css selector\",\"selector\":\"input[placeholder=\"Password\"], input[name=\"password\"], input[type=\"password\"]\"}\n  (Session info: chrome=150.0.7871.187)",
+  "stack": "NoSuchElementError: no such element: Unable to locate element: {\"method\":\"css selector\",\"selector\":\"input[placeholder=\"Password\"], input[name=\"password\"], input[type=\"password\"]\"}\n  (Session info: chrome=150.0.7871.187)\n    at Object.throwDecodedError (node_modules\\selenium-webdriver\\lib\\error.js:523:15)\n    at parseHttpResponse (node_modules\\selenium-webdriver\\lib\\http.js:527:13)\n    at Executor.execute (node_modules\\selenium-webdriver\\lib\\http.js:459:28)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async Driver.execute (node_modules\\selenium-webdriver\\lib\\webdriver.js:745:17)\n    at async Context.<anonymous> (tests\\specs\\ui-forms-validation.spec.js:120:18)",
+  "consoleLogs": [
+    {
+      "level": "SEVERE",
+      "message": "https://bluehorizon.blue-horizon.workers.dev/favicon.ico - Failed to load resource: the server responded with a status of 404 ()",
+      "timestamp": 1785392477623,
+      "type": ""
+    },
+    {
+      "level": "SEVERE",
+      "message": "https://bluehorizon.blue-horizon.workers.dev/icons/icon-192.webp - Failed to load resource: the server responded with a status of 404 ()",
+      "timestamp": 1785392477624,
+      "type": ""
+    },
+    {
+      "level": "WARNING",
+      "message": "https://bluehorizon.blue-horizon.workers.dev/login - Error while trying to use the following icon from the Manifest: https://bluehorizon.blue-horizon.workers.dev/icons/icon-192.webp (Download error or resource isn't a valid image)",
+      "timestamp": 1785392477624,
+      "type": ""
+    }
+  ],
+  "timestamp": "2026-07-30T06:21:27.741Z"
+}

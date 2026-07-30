@@ -120,7 +120,7 @@ function DownloadsPage() {
                 className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
               >
                 <a
-                  href={androidRelease?.file_url || "https://github.com/ssoumya2212/Blue-Horizon/releases/latest/download/app-debug.apk"}
+                  href={androidRelease?.file_url || "https://github.com/ssoumya2212/Blue-Horizon/releases/latest/download/app-release.apk"}
                   target="_blank" rel="noopener noreferrer"
                 >
                   <Download className="mr-2 h-5 w-5" /> Download APK

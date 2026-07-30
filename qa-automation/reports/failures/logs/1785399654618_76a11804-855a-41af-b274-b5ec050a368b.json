@@ -1,0 +1,9 @@
+{
+  "testName": "ADMIN-006 should not allow parent role to access admin dashboard",
+  "browser": "chrome",
+  "currentUrl": "https://bluehorizon.blue-horizon.workers.dev/login",
+  "failureReason": "timeout: Timed out receiving message from renderer: 18.002\n  (Session info: chrome=150.0.7871.187)",
+  "stack": "TimeoutError: timeout: Timed out receiving message from renderer: 18.002\n  (Session info: chrome=150.0.7871.187)\n    at Object.throwDecodedError (node_modules\\selenium-webdriver\\lib\\error.js:523:15)\n    at parseHttpResponse (node_modules\\selenium-webdriver\\lib\\http.js:527:13)\n    at Executor.execute (node_modules\\selenium-webdriver\\lib\\http.js:459:28)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async Driver.execute (node_modules\\selenium-webdriver\\lib\\webdriver.js:745:17)\n    at async BrowserHelper.open (utilities\\browser-helper.js:13:5)\n    at async LoginPage.open (pages\\BasePage.js:23:5)\n    at async LoginPage.navigate (pages\\LoginPage.js:15:5)\n    at async Context.<anonymous> (tests\\specs\\admin-dashboard.spec.js:116:5)",
+  "consoleLogs": [],
+  "timestamp": "2026-07-30T08:20:55.027Z"
+}

@@ -1,0 +1,16 @@
+{
+  "testName": "VAL-001 should show validation error when both fields are empty on submit",
+  "browser": "chrome",
+  "currentUrl": "https://bluehorizon.blue-horizon.workers.dev/login",
+  "failureReason": "stale element reference: stale element not found in the current frame\n  (Session info: chrome=150.0.7871.187)",
+  "stack": "StaleElementReferenceError: stale element reference: stale element not found in the current frame\n  (Session info: chrome=150.0.7871.187)\n    at Object.throwDecodedError (node_modules\\selenium-webdriver\\lib\\error.js:523:15)\n    at parseHttpResponse (node_modules\\selenium-webdriver\\lib\\http.js:527:13)\n    at Executor.execute (node_modules\\selenium-webdriver\\lib\\http.js:459:28)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async Driver.execute (node_modules\\selenium-webdriver\\lib\\webdriver.js:745:17)",
+  "consoleLogs": [
+    {
+      "level": "SEVERE",
+      "message": "https://bluehorizon.blue-horizon.workers.dev/favicon.ico - Failed to load resource: the server responded with a status of 404 ()",
+      "timestamp": 1785391006733,
+      "type": ""
+    }
+  ],
+  "timestamp": "2026-07-30T05:56:47.020Z"
+}

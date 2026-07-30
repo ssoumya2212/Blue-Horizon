@@ -1,67 +1,90 @@
 # Blue Horizon QA Test Report Guide
 
-This folder provides an Excel-based QA reporting setup for:
+This project now includes a centralized QA reporting package and GitHub Actions workflow setup.
 
-- Validation testing
-- Vulnerability testing
-- Unit testing
-- Load testing
-- Selenium web automation reporting
-- Appium mobile automation reporting
+## Main QA folder
 
-## Files
+Use this folder as the single source for testing artifacts:
 
-- `qa-reporting/templates/test-report-data.json` - source data for the report
-- `qa-reporting/scripts/generate-test-report.js` - generates the Excel workbook
-- `qa-reporting/reports/Blue_Horizon_Test_Report.xlsx` - generated output
+- `qa-reporting/`
 
-## Generate the Excel report
+All report deliverables should stay in this one folder structure.
 
-From the project root:
+Inside it:
+
+- `README.md`
+- `package.json`
+- `templates/test-report-data.json`
+- `scripts/generate-test-report.js`
+- `reports/Blue_Horizon_Test_Report.xlsx` after generation
+
+This means your Excel report input, generator and output are all grouped together in one testing folder.
+
+## Covered report areas
+
+The Excel workbook includes separate sheets for:
+
+- Summary
+- Validation
+- Vulnerability
+- Unit Tests
+- Load Tests
+- Selenium
+- Appium
+
+## Generate the Excel workbook
+
+From project root:
 
 ```bash
 npm install --prefix qa-reporting
 node qa-reporting/scripts/generate-test-report.js
 ```
 
-## What the workbook contains
+Generated file:
 
-- `Summary`
-- `Validation`
-- `Vulnerability`
-- `Unit Tests`
-- `Load Tests`
-- `Selenium`
-- `Appium`
+```bash
+qa-reporting/reports/Blue_Horizon_Test_Report.xlsx
+```
 
-## How to use it
+## Current execution truth
 
-1. Update `qa-reporting/templates/test-report-data.json`
-2. Replace sample rows with actual executed results
-3. Regenerate the workbook
-4. Upload the generated `.xlsx` file as a release or workflow artifact
+This session verified:
 
-## Recommended evidence to attach
+- production public home page is reachable at `https://bluehorizon.blue-horizon.workers.dev/`
+- local web build passes for `WEB APP`
+- workflow files exist for web CI, QA report generation, and mobile CI scaffolding
 
-- Selenium screenshots and logs
-- Appium screenshots and logs
-- MobSF report PDF/HTML
-- Load test summary graphs
-- Unit test coverage reports
-- Build logs from GitHub Actions
+This session did not fully execute:
 
-## Current repo reality
+- Selenium authenticated flows
+- Appium device/emulator tests
+- vulnerability scan tools like MobSF or npm audit
+- load testing tools like k6/JMeter
+- full unit test suite, because a unit-test framework is not yet configured in the app
 
-This repository already has:
+So the report contains:
 
-- web build support in `web_app`
-- Appium automation support in `android/qa-automation`
-- an existing Android workflow in `android/.github/workflows/appium.yml`
+- real verified items where available
+- blocked/not-run items where execution still requires infrastructure or automation suites
 
-This repository does not yet clearly contain:
+## GitHub Actions workflows
 
-- a committed Selenium test suite
-- a committed load-test suite
-- a configured unit-test framework for `web_app`
+Available workflows:
 
-So the report generator includes those sections as structured placeholders that you can fill with real execution results now, and later automate further.
+- `.github/workflows/web-ci.yml`
+- `.github/workflows/qa-report.yml`
+- `.github/workflows/mobile-appium.yml`
+
+## Recommended next order
+
+1. Push cleaned repository to GitHub
+2. Trigger `Web CI`
+3. Trigger `QA Report Generator`
+4. Download generated Excel artifact
+5. Add Selenium/Appium scripts if you want the workbook to fill from actual automated execution logs
+
+## Credentials note
+
+Use the provided credentials only in your authorized QA environment.
+Do not commit secrets or passwords into public repositories or CI logs.

@@ -2,18 +2,14 @@ name: QA Report Generator
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main, master, develop]
-    paths:
-      - 'qa-reporting/**'
-      - 'docs/testing/**'
+  workflow_run:
+    workflows: ["QA Full Test Suite (Selenium + Unit + Load + Security)"]
+    types: [completed]
 
 jobs:
   generate-qa-report:
+    name: Generate & Publish Excel QA Report
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: qa-reporting
 
     steps:
       - name: Checkout
@@ -24,16 +20,45 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: qa-reporting/package-lock.json
+          cache-dependency-path: qa-automation/package-lock.json
 
       - name: Install dependencies
+        working-directory: qa-automation
         run: npm install
 
-      - name: Generate Excel QA report
-        run: npm run generate-report
+      - name: Run Unit + Load tests to populate state
+        working-directory: qa-automation
+        env:
+          TEST_ENV: qa
+          BASE_URL: https://bluehorizon.blue-horizon.workers.dev
+        run: |
+          npx mocha \
+            "tests/specs/unit-tests.spec.js" \
+            "tests/specs/load-tests.spec.js" \
+            --require tests/hooks/setup.js \
+            --require tests/hooks/teardown.js \
+            --timeout 120000 \
+            --reporter min
+        continue-on-error: true
 
-      - name: Upload QA report artifact
+      - name: Generate standalone Excel report
+        working-directory: qa-automation
+        run: node utilities/excel-report-generator.js
+
+      - name: Install qa-reporting dependencies
+        working-directory: qa-reporting
+        run: npm install
+
+      - name: Generate full excel report from templates
+        working-directory: qa-reporting
+        run: node scripts/generate-test-report.js
+
+      - name: Upload Excel QA Report
         uses: actions/upload-artifact@v4
         with:
-          name: qa-test-report
-          path: qa-reporting/reports/Blue_Horizon_Test_Report.xlsx
+          name: Blue-Horizon-QA-Excel-Report
+          path: |
+            qa-automation/excel/Blue_Horizon_Master_Test_Report.xlsx
+            qa-automation/reports/Blue_Horizon_Master_Test_Report.xlsx
+            qa-reporting/reports/*.xlsx
+          retention-days: 90

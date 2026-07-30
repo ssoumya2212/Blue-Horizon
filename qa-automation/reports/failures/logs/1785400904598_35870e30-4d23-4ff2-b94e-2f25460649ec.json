@@ -1,0 +1,9 @@
+{
+  "testName": "NAV-026 should redirect admin trying to access /app/parent",
+  "browser": "chrome",
+  "currentUrl": "https://bluehorizon.blue-horizon.workers.dev/login",
+  "failureReason": "Waiting for element to be located By(css selector, input[placeholder=\"Email address\"], input[name=\"email\"], input[type=\"email\"])\nWait timed out after 16006ms",
+  "stack": "TimeoutError: Waiting for element to be located By(css selector, input[placeholder=\"Email address\"], input[name=\"email\"], input[type=\"email\"])\nWait timed out after 16006ms\n    at C:\\Users\\soumy\\OneDrive\\Desktop\\PDD\\qa-automation\\node_modules\\selenium-webdriver\\lib\\webdriver.js:929:22\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)",
+  "consoleLogs": [],
+  "timestamp": "2026-07-30T08:41:44.680Z"
+}

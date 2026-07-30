@@ -1,0 +1,248 @@
+name: QA Full Test Suite (Selenium + Unit + Load + Security)
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+  workflow_dispatch:
+
+jobs:
+  # ─── JOB 1: Unit Tests + Load Tests (no browser needed) ─────────────────
+  unit-and-load:
+    name: Unit Tests & Load Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: qa-automation/package-lock.json
+
+      - name: Install QA dependencies
+        working-directory: qa-automation
+        run: npm install
+
+      - name: Run Unit Tests (52 tests)
+        working-directory: qa-automation
+        env:
+          TEST_ENV: qa
+          BASE_URL: https://bluehorizon.blue-horizon.workers.dev
+        run: |
+          npx mocha "tests/specs/unit-tests.spec.js" \
+            --require tests/hooks/setup.js \
+            --timeout 60000 \
+            --reporter spec
+
+      - name: Run Load Tests (32 tests)
+        working-directory: qa-automation
+        env:
+          TEST_ENV: qa
+          BASE_URL: https://bluehorizon.blue-horizon.workers.dev
+        run: |
+          npx mocha "tests/specs/load-tests.spec.js" \
+            --require tests/hooks/setup.js \
+            --timeout 120000 \
+            --reporter spec
+        continue-on-error: true
+
+      - name: Run Security / Vulnerability Tests (HTTP subset, 14 tests)
+        working-directory: qa-automation
+        env:
+          TEST_ENV: qa
+          BASE_URL: https://bluehorizon.blue-horizon.workers.dev
+        run: |
+          npx mocha "tests/specs/vulnerability-tests.spec.js" \
+            --require tests/hooks/setup.js \
+            --grep "SEC-0(2[1-8]|39|40|42)" \
+            --timeout 60000 \
+            --reporter spec
+        continue-on-error: true
+
+      - name: Generate Excel Report
+        working-directory: qa-automation
+        env:
+          TEST_ENV: qa
+          BASE_URL: https://bluehorizon.blue-horizon.workers.dev
+        run: |
+          npx mocha "tests/specs/unit-tests.spec.js" \
+                    "tests/specs/load-tests.spec.js" \
+            --require tests/hooks/setup.js \
+            --require tests/hooks/teardown.js \
+            --timeout 120000 \
+            --reporter min
+        continue-on-error: true
+
+      - name: Upload Excel Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-excel-report-unit-load
+          path: |
+            qa-automation/excel/*.xlsx
+            qa-automation/reports/*.xlsx
+          retention-days: 30
+
+  # ─── JOB 2: Selenium E2E Tests (Chrome headless) ───────────────────────
+  selenium-e2e:
+    name: Selenium E2E Tests (Chrome)
+    runs-on: ubuntu-latest
+    needs: unit-and-load
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: qa-automation/package-lock.json
+
+      - name: Install QA dependencies
+        working-directory: qa-automation
+        run: npm install
+
+      - name: Setup Chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
+      - name: Run Authentication Tests
+        working-directory: qa-automation
+        env:
+          BROWSER: chrome
+          HEADLESS: true
+          TEST_ENV: qa
+          BASE_URL: https://bluehorizon.blue-horizon.workers.dev
+        run: |
+          npx mocha "tests/specs/authentication.spec.js" \
+            --require tests/hooks/setup.js \
+            --timeout 120000 \
+            --reporter spec
+        continue-on-error: true
+
+      - name: Run UI Validation Tests
+        working-directory: qa-automation
+        env:
+          BROWSER: chrome
+          HEADLESS: true
+          TEST_ENV: qa
+          BASE_URL: https://bluehorizon.blue-horizon.workers.dev
+        run: |
+          npx mocha "tests/specs/ui-validation.spec.js" \
+                    "tests/specs/ui-forms-validation.spec.js" \
+            --require tests/hooks/setup.js \
+            --timeout 120000 \
+            --reporter spec
+        continue-on-error: true
+
+      - name: Run Navigation Tests
+        working-directory: qa-automation
+        env:
+          BROWSER: chrome
+          HEADLESS: true
+          TEST_ENV: qa
+          BASE_URL: https://bluehorizon.blue-horizon.workers.dev
+        run: |
+          npx mocha "tests/specs/navigation.spec.js" \
+            --require tests/hooks/setup.js \
+            --timeout 120000 \
+            --reporter spec
+        continue-on-error: true
+
+      - name: Run Admin Dashboard Tests
+        working-directory: qa-automation
+        env:
+          BROWSER: chrome
+          HEADLESS: true
+          TEST_ENV: qa
+          BASE_URL: https://bluehorizon.blue-horizon.workers.dev
+        run: |
+          npx mocha "tests/specs/admin-dashboard.spec.js" \
+            --require tests/hooks/setup.js \
+            --timeout 120000 \
+            --reporter spec
+        continue-on-error: true
+
+      - name: Run Driver Dashboard Tests
+        working-directory: qa-automation
+        env:
+          BROWSER: chrome
+          HEADLESS: true
+          TEST_ENV: qa
+          BASE_URL: https://bluehorizon.blue-horizon.workers.dev
+        run: |
+          npx mocha "tests/specs/driver-dashboard.spec.js" \
+            --require tests/hooks/setup.js \
+            --timeout 120000 \
+            --reporter spec
+        continue-on-error: true
+
+      - name: Run Parent Dashboard Tests
+        working-directory: qa-automation
+        env:
+          BROWSER: chrome
+          HEADLESS: true
+          TEST_ENV: qa
+          BASE_URL: https://bluehorizon.blue-horizon.workers.dev
+        run: |
+          npx mocha "tests/specs/parent-dashboard.spec.js" \
+            --require tests/hooks/setup.js \
+            --timeout 120000 \
+            --reporter spec
+        continue-on-error: true
+
+      - name: Run ALL tests + Generate Full Excel Report
+        working-directory: qa-automation
+        env:
+          BROWSER: chrome
+          HEADLESS: true
+          TEST_ENV: qa
+          BASE_URL: https://bluehorizon.blue-horizon.workers.dev
+        run: |
+          npx mocha \
+            "tests/specs/unit-tests.spec.js" \
+            "tests/specs/load-tests.spec.js" \
+            "tests/specs/authentication.spec.js" \
+            "tests/specs/ui-validation.spec.js" \
+            "tests/specs/ui-forms-validation.spec.js" \
+            "tests/specs/navigation.spec.js" \
+            "tests/specs/admin-dashboard.spec.js" \
+            "tests/specs/driver-dashboard.spec.js" \
+            "tests/specs/parent-dashboard.spec.js" \
+            "tests/specs/vulnerability-tests.spec.js" \
+            --require tests/hooks/setup.js \
+            --require tests/hooks/teardown.js \
+            --timeout 180000 \
+            --reporter mochawesome \
+            --reporter-options reportDir=reports/html,reportFilename=mochawesome,overwrite=true,html=true,json=true
+        continue-on-error: true
+
+      - name: Install qa-reporting dependencies
+        working-directory: qa-reporting
+        run: npm install
+
+      - name: Generate full excel report from templates
+        working-directory: qa-reporting
+        run: node scripts/generate-test-report.js
+
+      - name: Upload All QA Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-full-report
+          path: |
+            qa-automation/excel/*.xlsx
+            qa-automation/reports/*.xlsx
+            qa-automation/reports/html/
+            qa-automation/screenshots/
+            qa-automation/logs/
+            qa-reporting/reports/*.xlsx
+          retention-days: 30

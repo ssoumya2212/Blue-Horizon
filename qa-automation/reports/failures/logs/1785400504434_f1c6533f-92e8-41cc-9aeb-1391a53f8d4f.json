@@ -1,0 +1,28 @@
+{
+  "testName": "PAR-028 should render parent dashboard at 375px mobile width",
+  "browser": "chrome",
+  "currentUrl": "https://bluehorizon.blue-horizon.workers.dev/login",
+  "failureReason": "Waiting for element to be located By(css selector, input[placeholder=\"Email address\"], input[name=\"email\"], input[type=\"email\"])\nWait timed out after 15526ms",
+  "stack": "TimeoutError: Waiting for element to be located By(css selector, input[placeholder=\"Email address\"], input[name=\"email\"], input[type=\"email\"])\nWait timed out after 15526ms\n    at C:\\Users\\soumy\\OneDrive\\Desktop\\PDD\\qa-automation\\node_modules\\selenium-webdriver\\lib\\webdriver.js:929:22\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)",
+  "consoleLogs": [
+    {
+      "level": "SEVERE",
+      "message": "https://bluehorizon.blue-horizon.workers.dev/favicon.ico - Failed to load resource: the server responded with a status of 404 ()",
+      "timestamp": 1785400489105,
+      "type": ""
+    },
+    {
+      "level": "SEVERE",
+      "message": "https://bluehorizon.blue-horizon.workers.dev/icons/icon-192.webp - Failed to load resource: the server responded with a status of 404 ()",
+      "timestamp": 1785400489105,
+      "type": ""
+    },
+    {
+      "level": "WARNING",
+      "message": "https://bluehorizon.blue-horizon.workers.dev/login - Error while trying to use the following icon from the Manifest: https://bluehorizon.blue-horizon.workers.dev/icons/icon-192.webp (Download error or resource isn't a valid image)",
+      "timestamp": 1785400489105,
+      "type": ""
+    }
+  ],
+  "timestamp": "2026-07-30T08:35:04.519Z"
+}

@@ -1,0 +1,9 @@
+{
+  "testName": "DRV-002 should display driver tab on login page",
+  "browser": "chrome",
+  "currentUrl": "https://bluehorizon.blue-horizon.workers.dev/login",
+  "failureReason": "expected '' to include 'driver'",
+  "stack": "AssertionError: expected '' to include 'driver'\n    at Context.<anonymous> (tests\\specs\\driver-dashboard.spec.js:81:63)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)",
+  "consoleLogs": [],
+  "timestamp": "2026-07-30T08:25:35.880Z"
+}

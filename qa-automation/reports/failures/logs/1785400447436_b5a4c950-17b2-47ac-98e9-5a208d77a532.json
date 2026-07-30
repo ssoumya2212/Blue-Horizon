@@ -1,0 +1,9 @@
+{
+  "testName": "PAR-026 should load parent login page within 5 seconds",
+  "browser": "chrome",
+  "currentUrl": "https://bluehorizon.blue-horizon.workers.dev/login",
+  "failureReason": "expected 11615 to be below 5000",
+  "stack": "AssertionError: expected 11615 to be below 5000\n    at Context.<anonymous> (tests\\specs\\parent-dashboard.spec.js:247:34)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)",
+  "consoleLogs": [],
+  "timestamp": "2026-07-30T08:34:07.938Z"
+}

@@ -1,0 +1,28 @@
+{
+  "testName": "NAV-024 should redirect driver trying to access /app/admin",
+  "browser": "chrome",
+  "currentUrl": "https://bluehorizon.blue-horizon.workers.dev/login",
+  "failureReason": "Waiting for element to be located By(css selector, input[placeholder=\"Email address\"], input[name=\"email\"], input[type=\"email\"])\nWait timed out after 15501ms",
+  "stack": "TimeoutError: Waiting for element to be located By(css selector, input[placeholder=\"Email address\"], input[name=\"email\"], input[type=\"email\"])\nWait timed out after 15501ms\n    at C:\\Users\\soumy\\OneDrive\\Desktop\\PDD\\qa-automation\\node_modules\\selenium-webdriver\\lib\\webdriver.js:929:22\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)",
+  "consoleLogs": [
+    {
+      "level": "SEVERE",
+      "message": "https://bluehorizon.blue-horizon.workers.dev/icons/icon-192.webp - Failed to load resource: the server responded with a status of 404 ()",
+      "timestamp": 1785392362978,
+      "type": ""
+    },
+    {
+      "level": "WARNING",
+      "message": "https://bluehorizon.blue-horizon.workers.dev/login - Error while trying to use the following icon from the Manifest: https://bluehorizon.blue-horizon.workers.dev/icons/icon-192.webp (Download error or resource isn't a valid image)",
+      "timestamp": 1785392362978,
+      "type": ""
+    },
+    {
+      "level": "SEVERE",
+      "message": "https://bluehorizon.blue-horizon.workers.dev/favicon.ico - Failed to load resource: the server responded with a status of 404 ()",
+      "timestamp": 1785392363332,
+      "type": ""
+    }
+  ],
+  "timestamp": "2026-07-30T06:19:38.394Z"
+}

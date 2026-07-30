@@ -1,0 +1,28 @@
+{
+  "testName": "VAL-024 should have submit button with type=submit on login form",
+  "browser": "chrome",
+  "currentUrl": "https://bluehorizon.blue-horizon.workers.dev/login",
+  "failureReason": "no such element: Unable to locate element: {\"method\":\"css selector\",\"selector\":\"button[type=\"submit\"]\"}\n  (Session info: chrome=150.0.7871.187)",
+  "stack": "NoSuchElementError: no such element: Unable to locate element: {\"method\":\"css selector\",\"selector\":\"button[type=\"submit\"]\"}\n  (Session info: chrome=150.0.7871.187)\n    at Object.throwDecodedError (node_modules\\selenium-webdriver\\lib\\error.js:523:15)\n    at parseHttpResponse (node_modules\\selenium-webdriver\\lib\\http.js:527:13)\n    at Executor.execute (node_modules\\selenium-webdriver\\lib\\http.js:459:28)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async Driver.execute (node_modules\\selenium-webdriver\\lib\\webdriver.js:745:17)\n    at async Context.<anonymous> (tests\\specs\\ui-forms-validation.spec.js:366:17)",
+  "consoleLogs": [
+    {
+      "level": "SEVERE",
+      "message": "https://bluehorizon.blue-horizon.workers.dev/favicon.ico - Failed to load resource: the server responded with a status of 404 ()",
+      "timestamp": 1785392669071,
+      "type": ""
+    },
+    {
+      "level": "SEVERE",
+      "message": "https://bluehorizon.blue-horizon.workers.dev/icons/icon-192.webp - Failed to load resource: the server responded with a status of 404 ()",
+      "timestamp": 1785392669071,
+      "type": ""
+    },
+    {
+      "level": "WARNING",
+      "message": "https://bluehorizon.blue-horizon.workers.dev/login - Error while trying to use the following icon from the Manifest: https://bluehorizon.blue-horizon.workers.dev/icons/icon-192.webp (Download error or resource isn't a valid image)",
+      "timestamp": 1785392669071,
+      "type": ""
+    }
+  ],
+  "timestamp": "2026-07-30T06:24:34.081Z"
+}

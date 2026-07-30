@@ -122,7 +122,7 @@ function LandingPage() {
                 className="bg-emerald-600 text-white hover:bg-emerald-700"
               >
                 <a
-                  href="https://github.com/ssoumya2212/Blue-Horizon/releases/latest/download/app-debug.apk"
+                  href="https://github.com/ssoumya2212/Blue-Horizon/releases/latest/download/app-release.apk"
                   target="_blank" rel="noopener noreferrer"
                 >
                   <Download className="mr-2 h-5 w-5" /> Download Android App (.apk)

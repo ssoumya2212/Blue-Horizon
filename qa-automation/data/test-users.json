@@ -1,0 +1,22 @@
+{
+  "admin": {
+    "email": "soumyaselvam12@gmail.com",
+    "password": "123456SZ",
+    "role": "admin"
+  },
+  "driver": {
+    "email": "driver.arun2026@gmail.com",
+    "password": "12345678",
+    "role": "driver"
+  },
+  "parent": {
+    "email": "sumathi223@gmail.com",
+    "password": "12345678",
+    "role": "parent"
+  },
+  "invalid": {
+    "email": "invalid.user@gmail.com",
+    "password": "wrong-password",
+    "role": "invalid"
+  }
+}

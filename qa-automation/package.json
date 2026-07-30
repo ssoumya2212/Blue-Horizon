@@ -1,0 +1,54 @@
+{
+  "name": "blue-horizon-selenium-e2e",
+  "version": "2.0.0",
+  "private": true,
+  "type": "commonjs",
+  "description": "Blue Horizon QA Automation — 326+ real-time tests: Selenium E2E, Load, Vulnerability, Unit, Appium Mobile",
+  "scripts": {
+    "test": "mocha \"tests/specs/**/*.spec.js\" --require tests/hooks/setup.js --require tests/hooks/teardown.js --timeout 120000 --reporter mochawesome --reporter-options reportDir=reports/html,reportFilename=mochawesome,overwrite=false,html=true,json=true",
+
+    "test:selenium": "mocha \"tests/specs/authentication.spec.js\" \"tests/specs/ui-validation.spec.js\" \"tests/specs/admin-dashboard.spec.js\" \"tests/specs/driver-dashboard.spec.js\" \"tests/specs/parent-dashboard.spec.js\" \"tests/specs/navigation.spec.js\" \"tests/specs/ui-forms-validation.spec.js\" --require tests/hooks/setup.js --require tests/hooks/teardown.js --timeout 120000 --reporter mochawesome --reporter-options reportDir=reports/html,reportFilename=selenium,overwrite=false,html=true,json=true",
+
+    "test:load": "mocha \"tests/specs/load-tests.spec.js\" --require tests/hooks/setup.js --require tests/hooks/teardown.js --timeout 180000 --reporter mochawesome --reporter-options reportDir=reports/html,reportFilename=load,overwrite=false,html=true,json=true",
+
+    "test:security": "mocha \"tests/specs/vulnerability-tests.spec.js\" --require tests/hooks/setup.js --require tests/hooks/teardown.js --timeout 120000 --reporter mochawesome --reporter-options reportDir=reports/html,reportFilename=security,overwrite=false,html=true,json=true",
+
+    "test:unit": "mocha \"tests/specs/unit-tests.spec.js\" --require tests/hooks/setup.js --require tests/hooks/teardown.js --timeout 30000 --reporter mochawesome --reporter-options reportDir=reports/html,reportFilename=unit,overwrite=false,html=true,json=true",
+
+    "test:mobile": "mocha \"tests/specs/appium-mobile.spec.js\" --require tests/hooks/setup.js --require tests/hooks/teardown.js --timeout 180000 --reporter mochawesome --reporter-options reportDir=reports/html,reportFilename=mobile,overwrite=false,html=true,json=true",
+
+    "test:chrome": "cross-env BROWSER=chrome HEADLESS=false npm run test",
+    "test:chrome:headless": "cross-env BROWSER=chrome HEADLESS=true npm run test",
+    "test:firefox": "cross-env BROWSER=firefox HEADLESS=false npm run test",
+    "test:edge": "cross-env BROWSER=edge HEADLESS=false npm run test",
+
+    "test:all:selenium": "cross-env BROWSER=chrome HEADLESS=true npm run test:selenium",
+    "test:all:load":     "cross-env BROWSER=chrome npm run test:load",
+    "test:all:security": "cross-env BROWSER=chrome HEADLESS=true npm run test:security",
+    "test:all:unit":     "npm run test:unit",
+    "test:all:mobile":   "npm run test:mobile",
+
+    "report:excel": "node utilities/excel-report-generator.js",
+    "report:html":  "node utilities/html-report-index.js",
+
+    "e2e:selenium": "cross-env BROWSER=chrome HEADLESS=true npm run test:selenium && npm run report:excel && npm run report:html",
+    "e2e:full":     "cross-env BROWSER=chrome HEADLESS=true npm run test && npm run report:excel && npm run report:html",
+
+    "e2e": "cross-env BROWSER=chrome HEADLESS=true mocha \"tests/specs/unit-tests.spec.js\" \"tests/specs/load-tests.spec.js\" \"tests/specs/authentication.spec.js\" \"tests/specs/ui-validation.spec.js\" \"tests/specs/admin-dashboard.spec.js\" \"tests/specs/driver-dashboard.spec.js\" \"tests/specs/parent-dashboard.spec.js\" \"tests/specs/navigation.spec.js\" \"tests/specs/ui-forms-validation.spec.js\" \"tests/specs/vulnerability-tests.spec.js\" \"tests/specs/appium-mobile.spec.js\" --require tests/hooks/setup.js --require tests/hooks/teardown.js --timeout 180000 --reporter mochawesome --reporter-options reportDir=reports/html,reportFilename=mochawesome,overwrite=false,html=true,json=true && npm run report:excel && npm run report:html",
+
+    "discover:forms": "node utilities/form-discovery.js"
+  },
+  "dependencies": {
+    "chai": "^4.5.0",
+    "cross-env": "^7.0.3",
+    "dotenv": "^16.6.1",
+    "exceljs": "^4.4.0",
+    "fs-extra": "^11.3.2",
+    "glob": "^10.4.5",
+    "mocha": "^10.8.2",
+    "mochawesome": "^7.1.3",
+    "selenium-webdriver": "^4.35.0",
+    "uuid": "^11.1.0",
+    "winston": "^3.17.0"
+  }
+}

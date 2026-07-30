@@ -1,0 +1,9 @@
+{
+  "testName": "should display hero text on landing page",
+  "browser": "chrome",
+  "currentUrl": "https://bluehorizon.blue-horizon.workers.dev/",
+  "failureReason": "expected '<html lang=\"en\"><head><meta charset=\"…' to include 'Smart.Safe.Reliable.'",
+  "stack": "AssertionError: expected '<html lang=\"en\"><head><meta charset=\"…' to include 'Smart.Safe.Reliable.'\n    at Context.<anonymous> (tests\\specs\\ui-validation.spec.js:61:27)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)",
+  "consoleLogs": [],
+  "timestamp": "2026-07-30T08:18:07.242Z"
+}

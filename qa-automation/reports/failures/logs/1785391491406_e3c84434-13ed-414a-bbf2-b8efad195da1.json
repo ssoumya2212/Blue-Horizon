@@ -1,0 +1,28 @@
+{
+  "testName": "SEC-031 should not redirect to javascript: URI",
+  "browser": "chrome",
+  "currentUrl": "https://bluehorizon.blue-horizon.workers.dev/login?redirect=javascript:alert(1)",
+  "failureReason": "expected 'https://bluehorizon.blue-horizon.work…' to not include 'javascript:'",
+  "stack": "AssertionError: expected 'https://bluehorizon.blue-horizon.work…' to not include 'javascript:'\n    at Context.<anonymous> (tests\\specs\\vulnerability-tests.spec.js:409:24)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)",
+  "consoleLogs": [
+    {
+      "level": "SEVERE",
+      "message": "https://bluehorizon.blue-horizon.workers.dev/favicon.ico - Failed to load resource: the server responded with a status of 404 ()",
+      "timestamp": 1785391491399,
+      "type": ""
+    },
+    {
+      "level": "SEVERE",
+      "message": "https://bluehorizon.blue-horizon.workers.dev/icons/icon-192.webp - Failed to load resource: the server responded with a status of 404 ()",
+      "timestamp": 1785391491399,
+      "type": ""
+    },
+    {
+      "level": "WARNING",
+      "message": "https://bluehorizon.blue-horizon.workers.dev/login?redirect=javascript:alert(1) - Error while trying to use the following icon from the Manifest: https://bluehorizon.blue-horizon.workers.dev/icons/icon-192.webp (Download error or resource isn't a valid image)",
+      "timestamp": 1785391491399,
+      "type": ""
+    }
+  ],
+  "timestamp": "2026-07-30T06:04:51.511Z"
+}

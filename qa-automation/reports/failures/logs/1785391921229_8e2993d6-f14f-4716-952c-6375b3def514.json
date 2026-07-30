@@ -1,0 +1,9 @@
+{
+  "testName": "SEC-019 login page should use HTTPS (secure transport)",
+  "browser": "chrome",
+  "currentUrl": "data:,",
+  "failureReason": "expected 'data:,' to satisfy [Function]",
+  "stack": "AssertionError: expected 'data:,' to satisfy [Function]\n    at Context.<anonymous> (tests\\specs\\vulnerability-tests.spec.js:303:22)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)",
+  "consoleLogs": [],
+  "timestamp": "2026-07-30T06:12:01.306Z"
+}
