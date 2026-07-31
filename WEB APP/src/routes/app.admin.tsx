@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { addRoute } from "@/lib/routes";
+import { addRoute, parseRouteDescription } from "@/lib/routes";
 import { LocationPicker } from "@/components/LocationPicker";
 import {
   Bus,
@@ -26,6 +26,7 @@ import {
   Plus,
   Route as RouteIcon,
   MessageSquare,
+  MapPin,
 } from "lucide-react";
 import { addNotification } from "@/lib/notifications";
 import {
@@ -423,6 +424,8 @@ function AdminDashboard() {
               <TableHead>Bus</TableHead>
               <TableHead>Driver</TableHead>
               <TableHead>Route</TableHead>
+              <TableHead>Origin</TableHead>
+              <TableHead>Location</TableHead>
               <TableHead>Speed</TableHead>
               <TableHead>Students Onboard</TableHead>
               <TableHead>Next Stop</TableHead>
@@ -435,12 +438,25 @@ function AdminDashboard() {
                 (s) => s.bus_id === b.id && s.status !== "dropped",
               ).length;
               const total = students.filter((s) => s.bus_id === b.id).length;
+              
+              const routeData = routes.find(r => r.id === b.route_id);
+              const { start } = routeData ? parseRouteDescription(routeData.description) : { start: "Unknown" };
+              
               return (
                 <TableRow key={b.id}>
                   <TableCell className="font-bold">#{b.id}</TableCell>
                   <TableCell>{b.driver_name}</TableCell>
                   <TableCell className="text-muted-foreground">
                     {b.route_name}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {start || "—"}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center text-xs whitespace-nowrap">
+                       <MapPin className="mr-1 h-3 w-3 text-primary" />
+                       {b.lat?.toFixed(4) || "0.0000"}, {b.lng?.toFixed(4) || "0.0000"}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <span className="font-mono">{b.speed_kmh}</span> km/h

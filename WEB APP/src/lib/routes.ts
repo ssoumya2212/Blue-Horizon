@@ -61,7 +61,7 @@ type SaveRouteInput = {
   driverId?: string;
 };
 
-function parseRouteDescription(description?: string | null) {
+export function parseRouteDescription(description?: string | null) {
   const text = (description || "").trim();
   if (!text) {
     return { start: "", end: "", stopNames: [] as string[] };
