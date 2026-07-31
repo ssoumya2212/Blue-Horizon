@@ -145,6 +145,22 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const [showSplash, setShowSplash] = useState(true);
 
+  useEffect(() => {
+    const handleError = (e: ErrorEvent | PromiseRejectionEvent) => {
+      const msg = 'message' in e ? e.message : (e.reason?.message || String(e.reason));
+      if (typeof msg === 'string' && msg.includes('Failed to fetch dynamically imported module')) {
+        e.preventDefault();
+        window.location.reload();
+      }
+    };
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleError);
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleError);
+    };
+  }, []);
+
   const [permissionsGranted, setPermissionsGranted] = useState(true);
 
   useEffect(() => {
