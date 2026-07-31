@@ -664,6 +664,7 @@ function AddEntityDialog({
 }) {
   const open = kind !== null;
   const [saving, setSaving] = useState(false);
+  const [numStops, setNumStops] = useState(0);
 
   const config = {
     bus: {
@@ -985,14 +986,23 @@ function AddEntityDialog({
     const data = new FormData(e.currentTarget);
     try {
       if (kind === "route") {
+        const start = String(data.get("start") || "");
+        const end = String(data.get("end") || "");
+        const intermediateStops: string[] = [];
+        if (numStops > 0) {
+          for (let i = 0; i < numStops; i++) {
+            const stopName = String(data.get(`stop_${i}`) || "");
+            if (stopName.trim()) {
+              intermediateStops.push(stopName.trim());
+            }
+          }
+        }
+        
+        const stopNames = [start, ...intermediateStops, end].filter(Boolean);
+
         await addRoute({
           name: String(data.get("name") || "Route"),
-          start: String(data.get("start") || ""),
-          end: String(data.get("end") || ""),
-          stops: Number(data.get("stops") || 0),
-          students: 0,
-          bus: "—",
-          driver: "Unassigned",
+          stopNames,
         });
         toast.success("Route saved successfully!");
       } else if (kind === "bus") {
@@ -1300,6 +1310,17 @@ function AddEntityDialog({
                             </option>
                           ))}
                         </select>
+                      ) : f.type === "number" && f.name === "stops" ? (
+                        <Input
+                          id={f.name}
+                          name={f.name}
+                          type="number"
+                          placeholder={f.placeholder}
+                          required={f.required}
+                          disabled={saving}
+                          value={numStops || ""}
+                          onChange={(e) => setNumStops(Math.max(0, parseInt(e.target.value) || 0))}
+                        />
                       ) : (
                         <Input
                           id={f.name}
@@ -1310,6 +1331,25 @@ function AddEntityDialog({
                           disabled={saving}
                         />
                       )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {kind === "route" && numStops > 0 && (
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 mt-2">
+                  <div className="col-span-full border-t border-border pt-4">
+                    <Label className="text-sm text-muted-foreground font-semibold">Intermediate Stops</Label>
+                  </div>
+                  {Array.from({ length: numStops }).map((_, i) => (
+                    <div key={`stop_${i}`} className="grid gap-2">
+                      <Label htmlFor={`stop_${i}`}>Stop {i + 1} Name</Label>
+                      <Input
+                        id={`stop_${i}`}
+                        name={`stop_${i}`}
+                        placeholder={`Name of Stop ${i + 1}`}
+                        required
+                        disabled={saving}
+                      />
                     </div>
                   ))}
                 </div>
