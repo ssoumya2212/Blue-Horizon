@@ -95,7 +95,11 @@ function MapController({
     if (focusedId) {
       const bus = busesRef.current.find((item) => item.id === focusedId);
       if (bus) {
-        map.flyTo([bus.lat, bus.lng], 16);
+        const L = window.L as any;
+        if (L) {
+          const bounds = L.latLngBounds([bus.lat, bus.lng], schoolPosition as [number, number]);
+          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+        }
       }
     }
   }, [focusedId, map]);
