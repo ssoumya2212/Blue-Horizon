@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { addRoute } from "@/lib/routes";
+import { LocationPicker } from "@/components/LocationPicker";
 import {
   Bus,
   Users,
@@ -936,12 +937,14 @@ function AddEntityDialog({
           name: "start",
           label: "Start point",
           placeholder: "Anna Nagar Roundana",
+          type: "location",
           required: true,
         },
         {
           name: "end",
           label: "End point",
           placeholder: "Blue Horizon Int. School",
+          type: "location",
           required: true,
         },
         {
@@ -1321,6 +1324,13 @@ function AddEntityDialog({
                           value={numStops || ""}
                           onChange={(e) => setNumStops(Math.max(0, parseInt(e.target.value) || 0))}
                         />
+                      ) : f.type === "location" ? (
+                        <LocationPicker
+                          id={f.name}
+                          name={f.name}
+                          placeholder={f.placeholder}
+                          required={f.required}
+                        />
                       ) : (
                         <Input
                           id={f.name}
@@ -1343,12 +1353,11 @@ function AddEntityDialog({
                   {Array.from({ length: numStops }).map((_, i) => (
                     <div key={`stop_${i}`} className="grid gap-2">
                       <Label htmlFor={`stop_${i}`}>Stop {i + 1} Name</Label>
-                      <Input
+                      <LocationPicker
                         id={`stop_${i}`}
                         name={`stop_${i}`}
-                        placeholder={`Name of Stop ${i + 1}`}
+                        placeholder={`Select Stop ${i + 1}`}
                         required
-                        disabled={saving}
                       />
                     </div>
                   ))}
