@@ -256,7 +256,7 @@ export function useRoutes() {
 
     fetchRoutes();
     const sub1 = supabase
-      .channel("routes_ch")
+      .channel(`routes_ch_${Math.random()}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "routes" },
@@ -264,7 +264,7 @@ export function useRoutes() {
       )
       .subscribe();
     const sub2 = supabase
-      .channel("buses_ch")
+      .channel(`buses_ch_${Math.random()}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "buses" },
@@ -272,7 +272,7 @@ export function useRoutes() {
       )
       .subscribe();
     const sub3 = supabase
-      .channel("students_ch")
+      .channel(`students_ch_${Math.random()}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "students" },
@@ -280,7 +280,7 @@ export function useRoutes() {
       )
       .subscribe();
     const sub4 = supabase
-      .channel("drivers_profiles_ch")
+      .channel(`drivers_profiles_ch_${Math.random()}`)
       .on(
         "postgres_changes",
         {

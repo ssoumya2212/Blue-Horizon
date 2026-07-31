@@ -184,8 +184,8 @@ function ParentDashboard() {
     loadData();
 
     // Subscribe to all changes
-    const channel = supabase
-      .channel("parent_dashboard_realtime")
+    const sub = supabase
+      .channel(`parent_dashboard_realtime_${Math.random()}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "students" },
@@ -217,7 +217,7 @@ function ParentDashboard() {
       .subscribe();
 
     return () => {
-      channel.unsubscribe();
+      sub.unsubscribe();
     };
   }, []);
 
@@ -237,8 +237,8 @@ function ParentDashboard() {
     };
     fetchInitial();
 
-    const channel = supabase
-      .channel("bus_locations_changes")
+    const trackingSub = supabase
+      .channel(`bus_locations_changes_${Math.random()}`)
       .on(
         "postgres_changes",
         {
@@ -261,7 +261,7 @@ function ParentDashboard() {
       .subscribe();
 
     return () => {
-      channel.unsubscribe();
+      trackingSub.unsubscribe();
     };
   }, [bus?.id]);
 
