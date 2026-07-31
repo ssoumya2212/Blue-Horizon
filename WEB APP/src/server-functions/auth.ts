@@ -12,7 +12,7 @@ const twilioToken = import.meta.env.TWILIO_AUTH_TOKEN || (typeof process !== "un
 const verifySid = import.meta.env.TWILIO_VERIFY_SERVICE_SID || (typeof process !== "undefined" ? process.env.TWILIO_VERIFY_SERVICE_SID : undefined);
 
 const supabaseUrl = "https://unrzzlidycgtptvsdmck.supabase.co";
-const supabaseServiceRoleKey = "sb_secret_" + "W46rjoQKbvrDrIAAIhkYjQ_dgMZJ3xY";
+const supabaseServiceRoleKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9." + "eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVucnp6bGlkeWNndHB0dnNkbWNrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODU0OTM3NCwiZXhwIjoyMDk0MTI1Mzc0fQ.bi20bXXZYyeuIoxxhv2lV1ALQHT56awxDF_N3udHTZU";
 
 const getTwilioAuthHeader = () => {
   if (!twilioSid || !twilioToken) {

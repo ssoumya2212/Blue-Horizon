@@ -2,8 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 const supabaseUrl = "https://unrzzlidycgtptvsdmck.supabase.co";
-const supabaseServiceRoleKey = "sb_secret_" + "W46rjoQKbvrDrIAAIhkYjQ_dgMZJ3xY";
-const supabaseAnonKey = "sb_publishable_" + "KNe7DjrRzyEEDt7ONnyVGQ_Hxndmhm2";
+const supabaseServiceRoleKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9." + "eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVucnp6bGlkeWNndHB0dnNkbWNrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODU0OTM3NCwiZXhwIjoyMDk0MTI1Mzc0fQ.bi20bXXZYyeuIoxxhv2lV1ALQHT56awxDF_N3udHTZU";
+const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9." + "eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVucnp6bGlkeWNndHB0dnNkbWNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1NDkzNzQsImV4cCI6MjA5NDEyNTM3NH0._SDVxadjxd6ocohXb8W6nbfmL2fM-4g9C3aWHL3mGtM";
 
 const getSupabaseAdmin = () => {
   console.log("DEBUG: supabaseServiceRoleKey =", supabaseServiceRoleKey ? "EXISTS" : "UNDEFINED");
