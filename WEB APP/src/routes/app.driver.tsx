@@ -153,7 +153,11 @@ function DriverDashboard() {
     const startTracking = async () => {
       try {
         const { Geolocation } = await import("@capacitor/geolocation");
-        await Geolocation.requestPermissions();
+        try {
+          await Geolocation.requestPermissions();
+        } catch (e) {
+          console.log("Permission request skipped or unsupported (web):", e);
+        }
         watchId = await Geolocation.watchPosition(
           { enableHighAccuracy: true },
           async (position, err) => {
