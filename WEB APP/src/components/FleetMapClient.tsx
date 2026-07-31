@@ -266,7 +266,7 @@ export default function FleetMapClient({
     });
   }, []);
 
-  const schoolPosition = userRole === "admin" && userPos ? userPos : [13.0094, 80.0111];
+  const schoolPosition = [13.0094, 80.0111];
 
   return (
     <div
