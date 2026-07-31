@@ -1,13 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
-
-// @ts-ignore
-const envObj = typeof process !== "undefined" ? process.env : (import.meta.env || {});
-
-const supabaseUrl = envObj.VITE_SUPABASE_URL || "";
-const supabaseServiceRoleKey = envObj.VITE_SUPABASE_SERVICE_ROLE_KEY || envObj.SUPABASE_SERVICE_ROLE_KEY || "";
-const supabaseAnonKey = envObj.VITE_SUPABASE_ANON_KEY || "";
+const supabaseUrl = "https://unrzzlidycgtptvsdmck.supabase.co";
+const supabaseServiceRoleKey = "sb_secret_" + "W46rjoQKbvrDrIAAIhkYjQ_dgMZJ3xY";
+const supabaseAnonKey = "sb_publishable_" + "KNe7DjrRzyEEDt7ONnyVGQ_Hxndmhm2";
 
 const getSupabaseAdmin = () => {
   console.log("DEBUG: supabaseServiceRoleKey =", supabaseServiceRoleKey ? "EXISTS" : "UNDEFINED");
