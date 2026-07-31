@@ -54,9 +54,9 @@ const stopIcon = (index: number) =>
     popupAnchor: [0, -14],
   });
 
-const getBusIcon = (isHighlighted: boolean, busId?: string) =>
+const getBusIcon = (isHighlighted: boolean) =>
   new L.DivIcon({
-    html: `<div style="position:relative"><div style="position:absolute;inset:-6px;border-radius:9999px;background:${isHighlighted ? "oklch(0.65 0.18 25 / 0.35)" : "oklch(0.62 0.13 235 / 0.35)"};animation:ping 1.6s cubic-bezier(0,0,0.2,1) infinite"></div><div style="position:relative;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:9999px;background:${isHighlighted ? "oklch(0.55 0.2 25)" : "oklch(0.45 0.15 250)"};color:white;font-weight:700;font-size:14px;border:2px solid white;box-shadow:0 6px 16px rgba(0,0,0,0.25)">${busId ? busId : '🚍'}</div></div>`,
+    html: `<div style="position:relative"><div style="position:absolute;inset:-6px;border-radius:9999px;background:${isHighlighted ? "oklch(0.65 0.18 25 / 0.35)" : "oklch(0.62 0.13 235 / 0.35)"};animation:ping 1.6s cubic-bezier(0,0,0.2,1) infinite"></div><div style="position:relative;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:9999px;background:${isHighlighted ? "oklch(0.55 0.2 25)" : "oklch(0.45 0.15 250)"};color:white;font-weight:700;font-size:18px;border:2px solid white;box-shadow:0 6px 16px rgba(0,0,0,0.25)">🚍</div></div>`,
     className: "custom-leaflet-icon",
     iconSize: [36, 36],
     iconAnchor: [18, 18],
@@ -341,7 +341,7 @@ export default function FleetMapClient({
 
         {userPos && userRole !== "admin" && (
           userRole === "driver" ? (
-            <Marker position={userPos} icon={getBusIcon(true, driverBusId || "")}>
+            <Marker position={userPos} icon={getBusIcon(true)}>
               <Popup>
                 <div style={{ fontWeight: 600, fontSize: 14, color: "#111" }}>
                   School Bus {driverBusId || "Unassigned"}
@@ -367,13 +367,16 @@ export default function FleetMapClient({
             <Marker
               key={bus.id}
               position={[bus.lat, bus.lng]}
-              icon={getBusIcon(isHighlighted, bus.id)}
+              icon={getBusIcon(isHighlighted)}
               eventHandlers={{
                 click: () => {
                   setFocusedId(bus.id);
                 },
               }}
             >
+              <Tooltip direction="top" offset={[0, -20]} opacity={1}>
+                <span style={{ fontWeight: 600, fontSize: 13 }}>Bus {bus.id}</span>
+              </Tooltip>
               <Popup autoPan={false}>
                 <div style={{ fontWeight: 600, fontSize: 14, color: "#111" }}>
                   School Bus {bus.id}
