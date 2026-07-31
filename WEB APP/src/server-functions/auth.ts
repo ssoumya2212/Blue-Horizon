@@ -11,9 +11,10 @@ const twilioToken = import.meta.env.TWILIO_AUTH_TOKEN || (typeof process !== "un
 const verifySid = import.meta.env.TWILIO_VERIFY_SERVICE_SID || (typeof process !== "undefined" ? process.env.TWILIO_VERIFY_SERVICE_SID : undefined);
 
 // @ts-ignore
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || (typeof process !== "undefined" ? process.env.VITE_SUPABASE_URL : "") || "";
-// @ts-ignore
-const supabaseServiceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY || import.meta.env.SUPABASE_SERVICE_ROLE_KEY || (typeof process !== "undefined" ? process.env.SUPABASE_SERVICE_ROLE_KEY : "") || "";
+const envObj = typeof process !== "undefined" ? process.env : (import.meta.env || {});
+
+const supabaseUrl = envObj.VITE_SUPABASE_URL || "";
+const supabaseServiceRoleKey = envObj.VITE_SUPABASE_SERVICE_ROLE_KEY || envObj.SUPABASE_SERVICE_ROLE_KEY || "";
 
 const getTwilioAuthHeader = () => {
   if (!twilioSid || !twilioToken) {
