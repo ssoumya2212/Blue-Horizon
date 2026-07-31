@@ -158,14 +158,27 @@ export default function RouteMapClient({
           )
         )}
 
-        {routeShapes.map(({ route, path }) => (
-          <div key={route.id || route.name}>
-            {path.polyline.length > 0 && (
-              <Polyline
-                positions={[...path.polyline, schoolPosition as [number, number]]}
-                pathOptions={{ color: "#ef4444", weight: 4, opacity: 0.75 }}
-              />
-            )}
+        {routeShapes.map(({ route, path }, routeIndex) => {
+          const routeColors = [
+            "#ef4444", // Red
+            "#3b82f6", // Blue
+            "#10b981", // Green
+            "#f59e0b", // Yellow
+            "#8b5cf6", // Purple
+            "#ec4899", // Pink
+            "#14b8a6", // Teal
+            "#f97316", // Orange
+          ];
+          const routeColor = routeColors[routeIndex % routeColors.length];
+          
+          return (
+            <div key={route.id || route.name}>
+              {path.polyline.length > 0 && (
+                <Polyline
+                  positions={[...path.polyline, schoolPosition as [number, number]]}
+                  pathOptions={{ color: routeColor, weight: 5, opacity: 0.85 }}
+                />
+              )}
 
             {path.coordinates.map((stop, index) => (
               <Marker
@@ -185,7 +198,8 @@ export default function RouteMapClient({
               </Marker>
             ))}
           </div>
-        ))}
+          );
+        })}
       </MapContainer>
     </div>
   );
