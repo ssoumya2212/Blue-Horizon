@@ -48,5 +48,5 @@ jobs:
           name: test-appium-report
           path: |
             qa-automation/excel/*.xlsx
-            qa-automation/reports/*.xlsx
+
           retention-days: 30
